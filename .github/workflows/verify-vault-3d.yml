@@ -5,16 +5,33 @@ on:
     branches: ["feat/knowledge-vault-3d-v2"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
+    if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run quality
+      - name: Format new source
+        run: npx prettier --write src/Battlefield3DEnhanced.tsx src/Board.tsx src/knowledgeVault.ts tests/knowledgeVault.test.ts docs/XIANGQI_KNOWLEDGE_VAULT.md AGENTS.md
+      - name: Full quality gate
+        run: npm run quality
+      - name: Commit verified formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/Battlefield3DEnhanced.tsx src/Board.tsx src/knowledgeVault.ts tests/knowledgeVault.test.ts docs/XIANGQI_KNOWLEDGE_VAULT.md AGENTS.md
+          if git diff --cached --quiet; then
+            echo "No formatting changes"
+          else
+            git commit -m "chore: format verified knowledge and 3D source"
+            git push origin HEAD:feat/knowledge-vault-3d-v2
+          fi
