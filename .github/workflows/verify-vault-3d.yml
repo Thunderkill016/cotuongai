@@ -1,0 +1,20 @@
+name: Verify Knowledge Vault and 3D
+
+on:
+  push:
+    branches: ["feat/knowledge-vault-3d-v2"]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run quality
