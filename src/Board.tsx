@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Cuboid, Grid3X3 } from "lucide-react";
-import { Battlefield3D } from "./Battlefield3D";
+import { Battlefield3DEnhanced } from "./Battlefield3DEnhanced";
 import { Board2D, type BoardViewProps } from "./Board2D";
 import "./battlefield3d.css";
 
@@ -29,7 +29,11 @@ export function Board(props: BoardViewProps) {
           Bàn 2D
         </button>
       </div>
-      {view === "3d" ? <Battlefield3D {...props} /> : <Board2D {...props} />}
+      {view === "3d" ? (
+        <Battlefield3DEnhanced {...props} />
+      ) : (
+        <Board2D {...props} />
+      )}
     </div>
   );
 }
