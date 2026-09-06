@@ -28,6 +28,7 @@ jobs:
           rm -rf .git
           mv /tmp/cotuongai-git .git
           rm source.tgz
+          rm -f .github/workflows/ci.yml
       - name: Verify project
         run: |
           npm ci
