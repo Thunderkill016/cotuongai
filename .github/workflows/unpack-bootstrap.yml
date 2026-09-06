@@ -26,12 +26,16 @@ jobs:
         run: |
           set -euo pipefail
 
+          # chunk_04a currently on main is truncated. Recover the original
+          # 18,000-character chunk_04 from the commit that first uploaded it.
+          git show 2aa00295b1335c3c376667319f9473738c351adf:.bootstrap/chunk_04 > /tmp/chunk_04
+
           chunks=(
             .bootstrap/chunk_00
             .bootstrap/chunk_01
             .bootstrap/chunk_02
             .bootstrap/chunk_03
-            .bootstrap/chunk_04a
+            /tmp/chunk_04
             .bootstrap/chunk_05
             .bootstrap/chunk_06
           )
@@ -43,13 +47,16 @@ jobs:
             tr -d '[:space:]' < "$chunk" >> /tmp/cotuong-source.b64
           done
 
-          echo "Normalized base64 bytes: $(wc -c < /tmp/cotuong-source.b64)"
+          bytes=$(wc -c < /tmp/cotuong-source.b64)
+          echo "Normalized base64 bytes: $bytes"
+          test $((bytes % 4)) -eq 0
+
           base64 --decode /tmp/cotuong-source.b64 > /tmp/cotuong-source.gz
           gzip -t /tmp/cotuong-source.gz
           gzip -dc /tmp/cotuong-source.gz > /tmp/cotuong-source.tar
 
           echo "Archive preview:"
-          tar -tf /tmp/cotuong-source.tar | head -100
+          tar -tf /tmp/cotuong-source.tar | head -100 || true
 
           rm -rf /tmp/cotuong-unpacked
           mkdir -p /tmp/cotuong-unpacked
@@ -76,9 +83,28 @@ jobs:
           echo "Resulting repository root:"
           find . -maxdepth 2 -type f \
             -not -path "./.git/*" \
-            | sort | head -200
+            | sort | head -200 || true
 
           test -f package.json
+
+      - name: Validate application
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable || true
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+            pnpm build
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+            yarn build
+          elif [ -f package-lock.json ]; then
+            npm ci
+            npm run build
+          else
+            npm install
+            npm run build
+          fi
 
       - name: Commit unpacked application
         shell: bash
