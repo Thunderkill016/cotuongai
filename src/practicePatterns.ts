@@ -85,7 +85,8 @@ export function summarizePracticePatterns(
       0,
     );
     const duePositions = tagged.filter((card) => card.dueAt <= now).length;
-    const score = tagged.reduce((sum, card) => sum + reviewWeight(card), 0) +
+    const score =
+      tagged.reduce((sum, card) => sum + reviewWeight(card), 0) +
       Math.min(failedAttempts, 6) +
       duePositions;
 
@@ -97,11 +98,7 @@ export function summarizePracticePatterns(
       majorMissPositions,
       failedAttempts,
       duePositions,
-      evidence: evidenceLevel(
-        tagged.length,
-        negativePositions,
-        failedAttempts,
-      ),
+      evidence: evidenceLevel(tagged.length, negativePositions, failedAttempts),
       score,
     } satisfies PracticePatternSummary;
   });

@@ -22,6 +22,11 @@ import {
   reviewKindLabel,
   type GamePracticeCard,
 } from "./practiceMemory";
+import {
+  patternEvidenceLabel,
+  profileSampleNote,
+  summarizePracticePatterns,
+} from "./practicePatterns";
 import "./today.css";
 
 interface TodayPracticeProps {
@@ -68,6 +73,12 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
     ? (cards.find((card) => card.id === activeId) ?? null)
     : (queue[0] ?? null);
   const dueCount = duePracticeCount(cards, now);
+  const evidenceProfile = summarizePracticePatterns(cards, now);
+  const visiblePatterns = evidenceProfile.patterns
+    .filter(
+      (pattern) => pattern.negativePositions > 0 || pattern.failedAttempts > 0,
+    )
+    .slice(0, 3);
   const game = useMemo(() => {
     if (!active) return null;
     try {
@@ -341,6 +352,53 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                   </button>
                 </section>
               )}
+
+              <section
+                className="today-pattern-profile"
+                aria-label="Dấu hiệu lặp lại từ các ván đã lưu"
+              >
+                <div className="section-label">
+                  <span>DẤU HIỆU TRONG CÁC VÁN ĐÃ LƯU</span>
+                  <small>{evidenceProfile.totalPositions} thế</small>
+                </div>
+                <p className="today-pattern-caveat">
+                  {profileSampleNote(evidenceProfile.sample)}
+                </p>
+                {visiblePatterns.length ? (
+                  <div className="today-pattern-list">
+                    {visiblePatterns.map((pattern) => (
+                      <article
+                        key={pattern.tag}
+                        className={`today-pattern-item evidence-${pattern.evidence}`}
+                      >
+                        <div>
+                          <strong>{pattern.label}</strong>
+                          <span>{patternEvidenceLabel(pattern)}</span>
+                        </div>
+                        <dl>
+                          <div>
+                            <dt>Thế độc lập</dt>
+                            <dd>{pattern.positions}</dd>
+                          </div>
+                          <div>
+                            <dt>Lần ôn sai</dt>
+                            <dd>{pattern.failedAttempts}</dd>
+                          </div>
+                          <div>
+                            <dt>Đến hạn</dt>
+                            <dd>{pattern.duePositions}</dd>
+                          </div>
+                        </dl>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted">
+                    Chưa có tín hiệu lỗi đủ để xếp hạng. Nước tốt vẫn được lưu
+                    để ôn nhưng không bị biến thành “điểm yếu”.
+                  </p>
+                )}
+              </section>
 
               <section className="today-history-note">
                 <RefreshCw size={15} />
