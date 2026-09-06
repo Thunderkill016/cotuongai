@@ -1,0 +1,40 @@
+name: Finalize 3D Battlefield
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify-3d:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Sync dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Install dependencies
+        run: npm ci
+      - name: Format source
+        run: npm run format
+      - name: Full quality gate
+        run: npm run quality
+      - name: Commit verified 3D source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json src/Board.tsx src/Board2D.tsx src/Battlefield3D.tsx src/battlefield3d.css package.json docs/3D_BATTLEFIELD_MVP.md
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit"
+          else
+            git commit -m "chore: verify and format 3D battlefield"
+            git push origin HEAD:main
+          fi
