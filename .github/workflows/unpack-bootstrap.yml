@@ -36,12 +36,16 @@ jobs:
             .bootstrap/chunk_06
           )
 
+          : > /tmp/cotuong-source.b64
           for chunk in "${chunks[@]}"; do
             test -f "$chunk"
+            echo "$(basename "$chunk"): $(wc -c < "$chunk") bytes"
+            tr -d '[:space:]' < "$chunk" >> /tmp/cotuong-source.b64
           done
 
-          cat "${chunks[@]}" > /tmp/cotuong-source.b64
+          echo "Normalized base64 bytes: $(wc -c < /tmp/cotuong-source.b64)"
           base64 --decode /tmp/cotuong-source.b64 > /tmp/cotuong-source.gz
+          gzip -t /tmp/cotuong-source.gz
           gzip -dc /tmp/cotuong-source.gz > /tmp/cotuong-source.tar
 
           echo "Archive preview:"
