@@ -79,10 +79,7 @@ describe("post-game review planning", () => {
       ),
     ).toBeGreaterThan(90_000);
     expect(
-      evaluationLossCp(
-        { kind: "cp", value: 100, bound: "lower" },
-        cp(0),
-      ),
+      evaluationLossCp({ kind: "cp", value: 100, bound: "lower" }, cp(0)),
     ).toBeNull();
   });
 

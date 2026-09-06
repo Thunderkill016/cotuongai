@@ -14,8 +14,8 @@ import {
 } from "lucide-react";
 import { Board } from "./Board";
 import { deriveBattleCue } from "./battleCue";
-import { START_FEN, position } from "./chess";
-import { EngineClient } from "./engine";
+import { START_FEN, position, replay } from "./chess";
+import { EngineClient, scoreLabel } from "./engine";
 import {
   appendLegalMove,
   canHumanMove,
@@ -28,6 +28,13 @@ import {
   undoToHumanTurn,
   type PlayerSide,
 } from "./gameSession";
+import {
+  evaluationLossCp,
+  planReviewCandidates,
+  selectReviewMoments,
+  type ReviewEvidence,
+  type ReviewMoment,
+} from "./gameReview";
 import "./play.css";
 
 interface PlayVsAIProps {
@@ -51,24 +58,51 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   const [aiError, setAiError] = useState("");
   const [message, setMessage] = useState("");
   const [reviewPly, setReviewPly] = useState<number | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<
+    "idle" | "analyzing" | "ready" | "error"
+  >("idle");
+  const [reviewMoments, setReviewMoments] = useState<ReviewMoment[]>([]);
+  const [reviewIndex, setReviewIndex] = useState(0);
+  const [reviewSelected, setReviewSelected] = useState<string | null>(null);
+  const [reviewGuess, setReviewGuess] = useState<string | null>(null);
+  const [reviewRevealed, setReviewRevealed] = useState(false);
+  const [reviewProgress, setReviewProgress] = useState({ done: 0, total: 0 });
+  const [reviewError, setReviewError] = useState("");
   const engine = useRef<EngineClient | null>(null);
   const epoch = useRef(0);
 
   const snapshot = useMemo(() => currentSnapshot(moves), [moves]);
   const liveGame = useMemo(() => position(START_FEN, moves), [moves]);
   const humanCanMove = canHumanMove(moves, humanSide, aiThinking);
+  const activeReview =
+    reviewStatus === "ready" ? (reviewMoments[reviewIndex] ?? null) : null;
+  const drillGame = useMemo(
+    () => (activeReview ? position(activeReview.candidate.rootFen) : null),
+    [activeReview],
+  );
   const reviewMoves = reviewPly === null ? moves : moves.slice(0, reviewPly);
-  const displayFen = fenAfter(reviewMoves);
-  const displayedLastMove = reviewMoves.at(-1) ?? null;
-  const displayedMoveEffect = useMemo(() => {
-    if (!displayedLastMove) return null;
-    return deriveBattleCue(
-      fenAfter(reviewMoves.slice(0, -1)),
-      displayedLastMove,
-    );
-  }, [displayedLastMove, reviewPly, moves]);
-  const destinations =
-    reviewPly === null && selected && humanCanMove
+  const displayFen = activeReview
+    ? reviewRevealed
+      ? replay(activeReview.candidate.rootFen, [activeReview.candidate.move])
+      : activeReview.candidate.rootFen
+    : fenAfter(reviewMoves);
+  const displayedLastMove = activeReview
+    ? reviewRevealed
+      ? activeReview.candidate.move
+      : null
+    : (reviewMoves.at(-1) ?? null);
+  const displayedMoveEffect = activeReview
+    ? reviewRevealed
+      ? activeReview.candidate.cue
+      : null
+    : displayedLastMove
+      ? deriveBattleCue(fenAfter(reviewMoves.slice(0, -1)), displayedLastMove)
+      : null;
+  const destinations = activeReview
+    ? !reviewRevealed && reviewSelected && drillGame
+      ? drillGame.moves({ square: reviewSelected }).map((move) => move.slice(2))
+      : []
+    : reviewPly === null && selected && humanCanMove
       ? liveGame.moves({ square: selected }).map((move) => move.slice(2))
       : [];
   const rows = moveListRows(moves);
@@ -91,6 +125,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   useEffect(() => {
     if (
       reviewPly !== null ||
+      reviewStatus !== "idle" ||
       engineState !== "ready" ||
       aiThinking ||
       aiError ||
@@ -139,7 +174,15 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
       .finally(() => {
         if (ticket === epoch.current) setAiThinking(false);
       });
-  }, [moves, humanSide, engineState, aiThinking, aiError, reviewPly]);
+  }, [
+    moves,
+    humanSide,
+    engineState,
+    aiThinking,
+    aiError,
+    reviewPly,
+    reviewStatus,
+  ]);
 
   function cancelPending() {
     ++epoch.current;
@@ -147,8 +190,20 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     setAiThinking(false);
   }
 
+  function resetReview() {
+    setReviewStatus("idle");
+    setReviewMoments([]);
+    setReviewIndex(0);
+    setReviewSelected(null);
+    setReviewGuess(null);
+    setReviewRevealed(false);
+    setReviewProgress({ done: 0, total: 0 });
+    setReviewError("");
+  }
+
   function newGame(side: PlayerSide = humanSide) {
     cancelPending();
+    resetReview();
     setHumanSide(side);
     setMoves([]);
     setSelected(null);
@@ -161,6 +216,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   function undo() {
     if (!canUndo) return;
     cancelPending();
+    resetReview();
     setMoves((current) => undoToHumanTurn(current, humanSide));
     setSelected(null);
     setAiError("");
@@ -169,7 +225,29 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   }
 
   function clickSquare(square: string) {
-    if (reviewPly !== null) return;
+    if (activeReview) {
+      if (reviewRevealed || !drillGame) return;
+      setMessage("");
+      const piece = drillGame.get(square);
+      if (piece?.color === humanSide) {
+        setReviewSelected((current) => (current === square ? null : square));
+        setReviewGuess(null);
+        return;
+      }
+      if (!reviewSelected) {
+        setMessage(`Chọn một quân ${sideName(humanSide)} để tính lại.`);
+        return;
+      }
+      const guess = `${reviewSelected}${square}`;
+      if (!drillGame.moves().includes(guess)) {
+        setMessage("Nước này không hợp lệ trong thế cần ôn lại.");
+        return;
+      }
+      setReviewGuess(guess);
+      setReviewSelected(null);
+      return;
+    }
+    if (reviewPly !== null || reviewStatus === "analyzing") return;
     if (!humanCanMove) {
       if (aiThinking)
         setMessage("Pikafish đang đi. Chờ nước đáp xong rồi ra lệnh tiếp.");
@@ -196,6 +274,109 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     }
   }
 
+  async function analyzeGameReview() {
+    const client = engine.current;
+    if (!client || engineState !== "ready") {
+      setReviewError("Pikafish chưa sẵn sàng để phân tích ván này.");
+      setReviewStatus("error");
+      return;
+    }
+    if (!moves.length) return;
+
+    cancelPending();
+    const ticket = ++epoch.current;
+    setSelected(null);
+    setReviewPly(null);
+    setReviewStatus("analyzing");
+    setReviewMoments([]);
+    setReviewIndex(0);
+    setReviewGuess(null);
+    setReviewSelected(null);
+    setReviewRevealed(false);
+    setReviewError("");
+    setMessage("");
+
+    const candidates = planReviewCandidates(moves, humanSide, 9);
+    setReviewProgress({ done: 0, total: candidates.length });
+    const evidence: ReviewEvidence[] = [];
+
+    try {
+      for (let index = 0; index < candidates.length; index++) {
+        if (ticket !== epoch.current) return;
+        const candidate = candidates[index];
+        try {
+          const best = await client.analyze(START_FEN, candidate.history);
+          if (ticket !== epoch.current) return;
+          const bestLine = best.lines[0];
+          if (!best.bestmove || !bestLine) continue;
+
+          let playedLine = best.lines.find(
+            (line) => line.pv[0] === candidate.move,
+          );
+          if (!playedLine) {
+            const played = await client.analyze(
+              START_FEN,
+              candidate.history,
+              candidate.move,
+            );
+            if (ticket !== epoch.current) return;
+            playedLine = played.lines[0];
+          }
+          if (!playedLine) continue;
+
+          evidence.push({
+            candidate,
+            bestmove: best.bestmove,
+            bestScore: bestLine.score,
+            playedScore: playedLine.score,
+            bestLine: bestLine.pv,
+            playedLine: playedLine.pv,
+            lossCp: evaluationLossCp(bestLine.score, playedLine.score),
+          });
+        } catch (error) {
+          if ((error as Error).name === "AbortError") {
+            if (ticket !== epoch.current) return;
+            throw error;
+          }
+          // One un-analyzable position must not discard the whole game review.
+        } finally {
+          if (ticket === epoch.current)
+            setReviewProgress({ done: index + 1, total: candidates.length });
+        }
+      }
+
+      if (ticket !== epoch.current) return;
+      const moments = selectReviewMoments(evidence);
+      if (!moments.length)
+        throw new Error(
+          "Chưa lấy được đủ dữ liệu engine hợp lệ để ôn lại ván này.",
+        );
+      setReviewMoments(moments);
+      setReviewIndex(0);
+      setReviewStatus("ready");
+    } catch (error) {
+      if (ticket !== epoch.current || (error as Error).name === "AbortError")
+        return;
+      setReviewError(
+        (error as Error).message || "Không thể phân tích ván lúc này.",
+      );
+      setReviewStatus("error");
+    }
+  }
+
+  function nextReviewMoment() {
+    if (!reviewMoments.length) return;
+    if (reviewIndex >= reviewMoments.length - 1) {
+      resetReview();
+      return;
+    }
+    setReviewIndex((index) => index + 1);
+    setReviewSelected(null);
+    setReviewGuess(null);
+    setReviewRevealed(false);
+    setMessage("");
+  }
+
   function retryEngine() {
     setAiError("");
     setMessage("");
@@ -206,17 +387,21 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   }
 
   const statusText =
-    reviewPly !== null
-      ? `Đang xem lại nước ${reviewPly}/${moves.length}`
-      : snapshot.phase === "finished"
-        ? resultLabel(snapshot.result)
-        : aiThinking
-          ? `Pikafish đang tính cho ${sideName(snapshot.turn)}…`
-          : snapshot.inCheck
-            ? `${sideName(snapshot.turn)} đang bị chiếu Tướng.`
-            : snapshot.turn === humanSide
-              ? `Tới lượt bạn — ${sideName(humanSide)}.`
-              : `Tới lượt Pikafish — ${sideName(snapshot.turn)}.`;
+    reviewStatus === "analyzing"
+      ? `Đang tìm thời điểm đáng học ${reviewProgress.done}/${reviewProgress.total}…`
+      : activeReview
+        ? `Ôn lại ${reviewIndex + 1}/${reviewMoments.length} — tự tính trước khi xem Pikafish.`
+        : reviewPly !== null
+          ? `Đang xem lại nước ${reviewPly}/${moves.length}`
+          : snapshot.phase === "finished"
+            ? resultLabel(snapshot.result)
+            : aiThinking
+              ? `Pikafish đang tính cho ${sideName(snapshot.turn)}…`
+              : snapshot.inCheck
+                ? `${sideName(snapshot.turn)} đang bị chiếu Tướng.`
+                : snapshot.turn === humanSide
+                  ? `Tới lượt bạn — ${sideName(humanSide)}.`
+                  : `Tới lượt Pikafish — ${sideName(snapshot.turn)}.`;
 
   return (
     <div className="app-shell play-vs-ai-shell">
@@ -292,21 +477,41 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
 
             <Board
               fen={displayFen}
-              selected={reviewPly === null ? selected : null}
+              selected={
+                activeReview
+                  ? reviewSelected
+                  : reviewPly === null
+                    ? selected
+                    : null
+              }
               destinations={destinations}
               arrow={null}
               lastMove={displayedLastMove}
               moveEffect={displayedMoveEffect}
               onSquare={clickSquare}
               disabled={
-                reviewPly !== null ||
-                !humanCanMove ||
-                snapshot.phase === "finished"
+                activeReview
+                  ? reviewRevealed
+                  : reviewStatus === "analyzing" ||
+                    reviewPly !== null ||
+                    !humanCanMove ||
+                    snapshot.phase === "finished"
               }
               flipped={flipped}
             />
 
-            {reviewPly !== null ? (
+            {activeReview ? (
+              <div className="board-bottomline play-board-actions review-board-prompt">
+                <span>
+                  <span className="legend-dot" />
+                  {reviewRevealed
+                    ? "Đã mở đáp án của thế này"
+                    : reviewGuess
+                      ? `Nước bạn đang chọn: ${moveLabel(reviewGuess)}`
+                      : "Tự chọn nước bạn sẽ đi trong thế này"}
+                </span>
+              </div>
+            ) : reviewPly !== null ? (
               <div className="replay-controls play-review-controls">
                 <button
                   aria-label="Nước trước"
@@ -351,7 +556,9 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
               className={`engine-status ${engineState === "error" || aiError ? "engine-error" : ""}`}
               role="status"
             >
-              {engineState === "loading" || aiThinking ? (
+              {engineState === "loading" ||
+              aiThinking ||
+              reviewStatus === "analyzing" ? (
                 <LoaderCircle size={15} className="spin" />
               ) : engineState === "ready" ? (
                 <ShieldCheck size={15} />
@@ -361,11 +568,13 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
               <span>
                 {engineState === "loading"
                   ? "Đang nạp Pikafish và NNUE…"
-                  : aiThinking
-                    ? "Pikafish đang tìm nước đáp trong giới hạn tìm kiếm hiện tại…"
-                    : engineState === "error"
-                      ? engineError
-                      : "Pikafish sẵn sàng · engine chạy trực tiếp trên thiết bị"}
+                  : reviewStatus === "analyzing"
+                    ? `Đang phân tích thế ${reviewProgress.done}/${reviewProgress.total} cho phần ôn sau ván…`
+                    : aiThinking
+                      ? "Pikafish đang tìm nước đáp trong giới hạn tìm kiếm hiện tại…"
+                      : engineState === "error"
+                        ? engineError
+                        : "Pikafish sẵn sàng · engine chạy trực tiếp trên thiết bị"}
               </span>
               {(engineState === "error" || aiError) && (
                 <button onClick={retryEngine}>Thử lại</button>
@@ -434,18 +643,140 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
               </section>
             )}
 
+            {reviewStatus !== "idle" && (
+              <section className="play-review-study" aria-live="polite">
+                {reviewStatus === "analyzing" ? (
+                  <>
+                    <div className="section-label">
+                      <span>ĐANG LỌC THẾ ĐÁNG HỌC</span>
+                    </div>
+                    <p>
+                      Pikafish đang xem tối đa 9 lượt của bạn, không chấm mọi
+                      nước để tránh biến review thành một bảng lỗi dài.
+                    </p>
+                    <div
+                      className="review-progress"
+                      aria-label="Tiến độ phân tích"
+                    >
+                      <span
+                        style={{
+                          width: `${reviewProgress.total ? (reviewProgress.done / reviewProgress.total) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <small>
+                      {reviewProgress.done}/{reviewProgress.total} vị trí đã xem
+                    </small>
+                  </>
+                ) : reviewStatus === "error" ? (
+                  <>
+                    <div className="section-label">
+                      <span>CHƯA PHÂN TÍCH ĐƯỢC</span>
+                    </div>
+                    <p>{reviewError}</p>
+                    <button
+                      className="secondary-button"
+                      onClick={analyzeGameReview}
+                    >
+                      <RefreshCw size={15} /> Thử phân tích lại
+                    </button>
+                  </>
+                ) : activeReview ? (
+                  <>
+                    <div className="section-label review-study-heading">
+                      <span>
+                        THẾ {reviewIndex + 1}/{reviewMoments.length}
+                      </span>
+                      <small>Trước nước {activeReview.candidate.ply + 1}</small>
+                    </div>
+                    {!reviewRevealed ? (
+                      <>
+                        <h3>Đừng xem engine. Tính lại trước.</h3>
+                        <p>
+                          Nhìn ý đồ của đối thủ, các nước chiếu/ăn quân trước,
+                          rồi chọn một nước trên bàn.
+                        </p>
+                        <button
+                          className="primary-button"
+                          disabled={!reviewGuess}
+                          onClick={() => setReviewRevealed(true)}
+                        >
+                          <ShieldCheck size={16} /> Chốt nước tôi chọn
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className={`review-verdict ${activeReview.kind}`}>
+                          {activeReview.kind === "major-miss"
+                            ? "Đây là chỗ đáng học nhất"
+                            : activeReview.kind === "improvement"
+                              ? "Có một nước mạnh hơn đáng kể"
+                              : activeReview.kind === "good-find"
+                                ? "Trong ván bạn đã tìm đúng nước Pikafish ưu tiên"
+                                : "Có phương án khác đáng so sánh"}
+                        </div>
+                        <dl className="review-comparison">
+                          <div>
+                            <dt>Trong ván</dt>
+                            <dd>{moveLabel(activeReview.candidate.move)}</dd>
+                          </div>
+                          <div>
+                            <dt>Bạn vừa tính</dt>
+                            <dd>{moveLabel(reviewGuess)}</dd>
+                          </div>
+                          <div>
+                            <dt>Pikafish</dt>
+                            <dd>{moveLabel(activeReview.bestmove)}</dd>
+                          </div>
+                        </dl>
+                        <p className="review-score-line">
+                          Đánh giá engine: nước ưu tiên{" "}
+                          {scoreLabel(activeReview.bestScore)} · nước đã đi{" "}
+                          {scoreLabel(activeReview.playedScore)}
+                          {activeReview.lossCp !== null
+                            ? ` · chênh ${(activeReview.lossCp / 100).toFixed(2)}`
+                            : ""}
+                        </p>
+                        <p className="review-pv">
+                          Biến tham khảo:{" "}
+                          {activeReview.bestLine
+                            .slice(0, 4)
+                            .map(moveLabel)
+                            .join(" · ")}
+                        </p>
+                        <button
+                          className="primary-button"
+                          onClick={nextReviewMoment}
+                        >
+                          {reviewIndex === reviewMoments.length - 1
+                            ? "Kết thúc lượt ôn"
+                            : "Thế tiếp theo"}
+                          <ChevronRight size={16} />
+                        </button>
+                      </>
+                    )}
+                  </>
+                ) : null}
+              </section>
+            )}
+
             <div className="play-match-actions">
               <button
                 className="primary-button"
-                disabled={!moves.length}
-                onClick={() => {
-                  cancelPending();
-                  setSelected(null);
-                  setReviewPly(moves.length);
-                }}
+                disabled={
+                  !moves.length ||
+                  aiThinking ||
+                  reviewStatus === "analyzing" ||
+                  engineState !== "ready"
+                }
+                onClick={analyzeGameReview}
               >
-                <Sparkles size={17} />
-                Xem lại ván
+                {reviewStatus === "analyzing" ? (
+                  <LoaderCircle size={17} className="spin" />
+                ) : (
+                  <Sparkles size={17} />
+                )}
+                Phân tích ván
               </button>
               <button className="secondary-button" onClick={() => newGame()}>
                 <RefreshCw size={16} />

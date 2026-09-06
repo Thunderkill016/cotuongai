@@ -37,7 +37,8 @@ function candidateHeuristic(cue: BattleCue): number {
   if (cue.givesCheck) score += 5;
   if (cue.capture) score += 3;
   if (cue.kind === "cannon-shot") score += 2;
-  if (cue.kind === "cavalry-strike" || cue.kind === "chariot-charge") score += 1;
+  if (cue.kind === "cavalry-strike" || cue.kind === "chariot-charge")
+    score += 1;
   return score;
 }
 
@@ -109,7 +110,9 @@ export function evaluationLossCp(best: Score, played: Score): number | null {
   return Math.max(0, bestValue - playedValue);
 }
 
-export function classifyReviewMoment(evidence: ReviewEvidence): ReviewMomentKind {
+export function classifyReviewMoment(
+  evidence: ReviewEvidence,
+): ReviewMomentKind {
   if (evidence.bestmove === evidence.candidate.move) return "good-find";
   if (evidence.lossCp !== null && evidence.lossCp >= 250) return "major-miss";
   if (evidence.lossCp !== null && evidence.lossCp >= 80) return "improvement";
@@ -138,7 +141,9 @@ export function selectReviewMoments(
           : item.kind === "alternative"
             ? 2
             : 1;
-    return kind * 1_000_000 + (item.lossCp ?? 0) * 100 + item.candidate.heuristic;
+    return (
+      kind * 1_000_000 + (item.lossCp ?? 0) * 100 + item.candidate.heuristic
+    );
   };
 
   const ranked = [...moments].sort(
