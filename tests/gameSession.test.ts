@@ -33,9 +33,9 @@ describe("full-game session boundaries", () => {
   });
 
   it("undoes a completed pair back to the human turn", () => {
-    const moves = ["h2e2", "h7e7", "b2e2", "b7e7"];
-    expect(undoToHumanTurn(moves, "r")).toEqual(["h2e2", "h7e7"]);
-    expect(undoToHumanTurn(["h2e2"], "r")).toEqual([]);
+    const moves = ["h0g2", "h9g7", "g2h0", "g7h9"];
+    expect(undoToHumanTurn(moves, "r")).toEqual(["h0g2", "h9g7"]);
+    expect(undoToHumanTurn(["h0g2"], "r")).toEqual([]);
   });
 
   it("formats a stable two-column move list", () => {
