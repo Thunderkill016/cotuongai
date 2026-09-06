@@ -40,11 +40,11 @@ import {
   assessAttempt,
   independentSuccesses,
   parseAttempts,
-  recommendExercise,
   summarizeSkills,
   type Attempt,
 } from "./training";
 import { requestCoaching } from "./coach";
+import { recommendNextPractice } from "./retrieval";
 
 function loadHistory(): Attempt[] {
   try {
@@ -116,7 +116,10 @@ export default function App() {
       : [];
   const exerciseAttempts = attempts.filter((a) => a.exerciseId === exercise.id);
   const alreadyExposed = exerciseAttempts.length > 0;
-  const recommendation = recommendExercise(attempts, exposuresInMemory.current);
+  const recommendation = recommendNextPractice(
+    attempts,
+    exposuresInMemory.current,
+  );
   const skillSummaries = summarizeSkills(attempts);
 
   useEffect(() => {
