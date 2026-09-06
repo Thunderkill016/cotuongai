@@ -72,9 +72,7 @@ export function canHumanMove(
 ): boolean {
   const snapshot = currentSnapshot(moves, startFen);
   return (
-    snapshot.phase === "playing" &&
-    !aiThinking &&
-    snapshot.turn === humanSide
+    snapshot.phase === "playing" && !aiThinking && snapshot.turn === humanSide
   );
 }
 

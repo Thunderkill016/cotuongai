@@ -103,14 +103,13 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
       .then((analysis) => {
         if (ticket !== epoch.current) return;
         if (!analysis.bestmove) {
-          setAiError("Pikafish không trả về nước đi. Hãy thử lại hoặc bắt đầu ván mới.");
+          setAiError(
+            "Pikafish không trả về nước đi. Hãy thử lại hoặc bắt đầu ván mới.",
+          );
           return;
         }
         setMoves((current) => {
-          if (
-            ticket !== epoch.current ||
-            current.join("|") !== historyKey
-          )
+          if (ticket !== epoch.current || current.join("|") !== historyKey)
             return current;
           try {
             return appendLegalMove(current, analysis.bestmove!);
@@ -123,8 +122,11 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
         });
       })
       .catch((error) => {
-        if (ticket !== epoch.current || (error as Error).name === "AbortError") return;
-        setAiError((error as Error).message || "Pikafish không thể đi nước này.");
+        if (ticket !== epoch.current || (error as Error).name === "AbortError")
+          return;
+        setAiError(
+          (error as Error).message || "Pikafish không thể đi nước này.",
+        );
       })
       .finally(() => {
         if (ticket === epoch.current) setAiThinking(false);
@@ -161,7 +163,8 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   function clickSquare(square: string) {
     if (reviewPly !== null) return;
     if (!humanCanMove) {
-      if (aiThinking) setMessage("Pikafish đang đi. Chờ nước đáp xong rồi ra lệnh tiếp.");
+      if (aiThinking)
+        setMessage("Pikafish đang đi. Chờ nước đáp xong rồi ra lệnh tiếp.");
       return;
     }
     setMessage("");
@@ -248,7 +251,9 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
               Pikafish chỉ chọn nước cho phía máy.
             </p>
           </div>
-          <div className={`play-turn-card ${snapshot.inCheck ? "is-check" : ""}`}>
+          <div
+            className={`play-turn-card ${snapshot.inCheck ? "is-check" : ""}`}
+          >
             <Swords size={20} />
             <div>
               <small>TRẠNG THÁI</small>
@@ -264,7 +269,8 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                 <span
                   className={`side-dot ${snapshot.turn === "r" ? "red-dot" : ""}`}
                 />
-                Bạn cầm {sideName(humanSide)} · {sideName(snapshot.turn)} tới lượt
+                Bạn cầm {sideName(humanSide)} · {sideName(snapshot.turn)} tới
+                lượt
               </span>
               <button
                 className="icon-button"
@@ -358,7 +364,10 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
             </div>
           </section>
 
-          <aside className="coach-panel play-match-panel" aria-label="Thông tin ván đấu">
+          <aside
+            className="coach-panel play-match-panel"
+            aria-label="Thông tin ván đấu"
+          >
             <section className="play-match-card">
               <div className="section-label">
                 <span>
@@ -388,7 +397,11 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                 <small>{moves.length} nửa lượt</small>
               </div>
               {rows.length ? (
-                <div className="play-move-table" role="table" aria-label="Biên bản ván cờ">
+                <div
+                  className="play-move-table"
+                  role="table"
+                  aria-label="Biên bản ván cờ"
+                >
                   {rows.map((row) => (
                     <div className="play-move-row" role="row" key={row.number}>
                       <b>{row.number}.</b>

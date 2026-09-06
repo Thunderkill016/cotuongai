@@ -22,7 +22,11 @@ export default function Root() {
   }
 
   function closePlay() {
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
     setRoute("coach");
   }
 
