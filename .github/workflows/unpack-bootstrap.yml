@@ -1,123 +1,59 @@
-name: Unpack bootstrap source
+name: Recover application source
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - ".bootstrap/**"
+      - ".bootstrap/cotuongai-m2.zip"
       - ".github/workflows/unpack-bootstrap.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  unpack:
+  recover:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Reconstruct and unpack source
+      - name: Verify and unpack recovery archive
         shell: bash
         run: |
           set -euo pipefail
-
-          # chunk_04a currently on main is truncated. Recover the original
-          # 18,000-character chunk_04 from the commit that first uploaded it.
-          git show 2aa00295b1335c3c376667319f9473738c351adf:.bootstrap/chunk_04 > /tmp/chunk_04
-
-          chunks=(
-            .bootstrap/chunk_00
-            .bootstrap/chunk_01
-            .bootstrap/chunk_02
-            .bootstrap/chunk_03
-            /tmp/chunk_04
-            .bootstrap/chunk_05
-            .bootstrap/chunk_06
-          )
-
-          : > /tmp/cotuong-source.b64
-          for chunk in "${chunks[@]}"; do
-            test -f "$chunk"
-            echo "$(basename "$chunk"): $(wc -c < "$chunk") bytes"
-            tr -d '[:space:]' < "$chunk" >> /tmp/cotuong-source.b64
-          done
-
-          bytes=$(wc -c < /tmp/cotuong-source.b64)
-          echo "Normalized base64 bytes: $bytes"
-          test $((bytes % 4)) -eq 0
-
-          base64 --decode /tmp/cotuong-source.b64 > /tmp/cotuong-source.gz
-          gzip -t /tmp/cotuong-source.gz
-          gzip -dc /tmp/cotuong-source.gz > /tmp/cotuong-source.tar
-
-          echo "Archive preview:"
-          tar -tf /tmp/cotuong-source.tar | head -100 || true
-
-          rm -rf /tmp/cotuong-unpacked
-          mkdir -p /tmp/cotuong-unpacked
-          tar -xf /tmp/cotuong-source.tar \
-            --exclude=".git" \
-            --exclude="./.git" \
-            --exclude="node_modules" \
-            --exclude="*/node_modules" \
-            -C /tmp/cotuong-unpacked
-
+          archive=.bootstrap/cotuongai-m2.zip
+          test -f "$archive"
+          unzip -t "$archive"
+          rm -rf /tmp/cotuong-recovery
+          mkdir -p /tmp/cotuong-recovery
+          unzip -q "$archive" -d /tmp/cotuong-recovery
+          root=/tmp/cotuong-recovery/cotuongai-m2
+          test -f "$root/package.json"
+          test -f "$root/package-lock.json"
+          test -f "$root/src/App.tsx"
           shopt -s dotglob nullglob
-          entries=(/tmp/cotuong-unpacked/*)
-
-          if [ "${#entries[@]}" -eq 1 ] && [ -d "${entries[0]}" ] && [ -f "${entries[0]}/package.json" ]; then
-            echo "Single project directory detected: ${entries[0]}"
-            cp -a "${entries[0]}/." .
-          else
-            cp -a /tmp/cotuong-unpacked/. .
-          fi
-
+          cp -a "$root"/. .
           rm -rf .bootstrap
           rm -f .github/workflows/unpack-bootstrap.yml
 
-          echo "Resulting repository root:"
-          find . -maxdepth 2 -type f \
-            -not -path "./.git/*" \
-            | sort | head -200 || true
-
-          test -f package.json
-
-      - name: Validate application
+      - name: Validate recovered application
         shell: bash
         run: |
           set -euo pipefail
-          corepack enable || true
-          if [ -f pnpm-lock.yaml ]; then
-            pnpm install --frozen-lockfile
-            pnpm build
-          elif [ -f yarn.lock ]; then
-            yarn install --frozen-lockfile
-            yarn build
-          elif [ -f package-lock.json ]; then
-            npm ci
-            npm run build
-          else
-            npm install
-            npm run build
-          fi
+          npm ci
+          npm run quality
 
-      - name: Commit unpacked application
+      - name: Commit recovered source
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git commit -m "chore: unpack application source"
+          git diff --cached --stat
+          test -f package.json
+          test ! -d .bootstrap
+          git commit -m "chore: restore application source"
           git push origin HEAD:main
