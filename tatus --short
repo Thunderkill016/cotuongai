@@ -1,0 +1,20 @@
+[33m8cc692a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcodex-max-progress-20260907[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/codex-max-progress-20260907[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m, [m[1;32mfeat/autonomous-full-game[m[33m)[m docs: make Codex Max mission authoritative
+[33m29898bb[m docs: hand full Xiangqi build mission to Codex Max
+[33m9aba1e6[m docs: record knowledge vault and animated 3D release
+[33m826b6a0[m Build Xiangqi knowledge vault and animated 3D battlefield
+[33mdc2ccd8[m[33m ([m[1;31morigin/feat/knowledge-vault-3d-v2[m[33m)[m chore: remove temporary knowledge and 3D verification workflow
+[33m81521c0[m chore: format verified knowledge and 3D source
+[33me2a4c89[m ci: format and verify knowledge vault plus 3D
+[33mb5b7a3c[m ci: verify knowledge vault and animated 3D battlefield
+[33m0611506[m feat: switch default board to animated 3D battlefield
+[33m8a704a3[m feat: add animated 3D Xiangqi battlefield
+[33meb3c293[m docs: define Xiangqi knowledge vault ingestion system
+[33ma61e7d3[m docs: require knowledge vault and 3D battlefield doctrine
+[33m70ff373[m test: validate Xiangqi knowledge vault provenance
+[33m0393be3[m feat: add provenance-aware Xiangqi knowledge vault
+[33m5304eca[m chore: remove temporary 3D verification workflow
+[33m7f43914[m chore: verify and format 3D battlefield
+[33m8393f3b[m ci: verify playable 3D battlefield before production
+[33m427c67d[m build: add Three.js for real 3D battlefield
+[33m4dd2029[m style: add responsive 3D battlefield presentation
+[33m1029e79[m feat: make 3D battlefield the default board view
