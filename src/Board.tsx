@@ -10,6 +10,7 @@ interface Props {
   onSquare: (sq: string) => void;
   disabled?: boolean;
   flipped: boolean;
+  tutorialSquares?: string[];
 }
 export function Board({
   fen,
@@ -20,6 +21,7 @@ export function Board({
   onSquare,
   disabled,
   flipped,
+  tutorialSquares = [],
 }: Props) {
   const game = position(fen);
   const [focus, setFocus] = useState(85); // Red general at e0 is a useful keyboard starting point.
@@ -122,7 +124,7 @@ export function Board({
               role="gridcell"
               aria-rowindex={row + 1}
               aria-colindex={col + 1}
-              className={`square ${selected === sq ? "selected" : ""} ${destination ? "destination" : ""} ${recent ? "recent" : ""}`}
+              className={`square ${selected === sq ? "selected" : ""} ${destination ? "destination" : ""} ${recent ? "recent" : ""} ${tutorialSquares.includes(sq) ? "tutorial-focus" : ""}`}
               style={{ left: `${10 + col * 10}%`, top: `${9 + row * 9}%` }}
               aria-label={`${sq}${piece ? `, ${pieceName(piece)}` : ", trống"}${destination ? ", có thể đi" : ""}`}
               aria-selected={selected === sq}

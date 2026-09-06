@@ -90,6 +90,13 @@ export default function App() {
   const [coachBusy, setCoachBusy] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [dialog, setDialog] = useState<"progress" | "help" | null>(null);
+  const [showStarterGuide, setShowStarterGuide] = useState(() => {
+    try {
+      return localStorage.getItem("ky-lo.onboarding.v1") !== "done";
+    } catch {
+      return true;
+    }
+  });
   const engine = useRef<EngineClient | null>(null);
   const epoch = useRef(0);
   const coachAbort = useRef<AbortController | null>(null);
@@ -121,6 +128,42 @@ export default function App() {
     exposuresInMemory.current,
   );
   const skillSummaries = summarizeSkills(attempts);
+  const starterGuide =
+    showStarterGuide && mode === "training" && exerciseIndex === 0
+      ? played
+        ? {
+            step: 3,
+            title: "Bạn vừa đi nước đầu tiên.",
+            text: "Xe đỏ đã bắt Mã. Bây giờ hãy nhìn xem Đen có thể bắt lại Xe ngay hay không.",
+            squares: ["b3"],
+          }
+        : candidate === "b0b3"
+          ? {
+              step: 3,
+              title: "Xác nhận nước bạn vừa chọn.",
+              text: "Bạn đã chọn Xe b0 → b3 để bắt Mã. Bấm ‘Thử nước này’ ở bảng bên phải.",
+              squares: ["b0", "b3"],
+            }
+          : selected === "b0"
+            ? {
+                step: 2,
+                title: "Bấm quân Mã đen để bắt.",
+                text: "Các điểm được đánh dấu là nơi Xe có thể đi. Bấm quân Mã 馬 ở b3.",
+                squares: ["b0", "b3"],
+              }
+            : {
+                step: 1,
+                title: "Bạn cầm quân ĐỎ.",
+                text: "Bước đầu tiên: bấm quân Xe 車 ở góc dưới bên trái. Xe đi theo đường thẳng.",
+                squares: ["b0"],
+              }
+      : null;
+  function dismissStarterGuide() {
+    setShowStarterGuide(false);
+    try {
+      localStorage.setItem("ky-lo.onboarding.v1", "done");
+    } catch {}
+  }
 
   useEffect(() => {
     const client = new EngineClient((status, text) => {
@@ -504,6 +547,20 @@ export default function App() {
         </section>
         <div className="workspace">
           <section className="board-section" aria-label="Khu vực bàn cờ">
+            {starterGuide && (
+              <aside className="starter-guide" aria-live="polite">
+                <div className="starter-step">
+                  BẮT ĐẦU · {starterGuide.step}/3
+                </div>
+                <div>
+                  <strong>{starterGuide.title}</strong>
+                  <p>{starterGuide.text}</p>
+                </div>
+                <button type="button" onClick={dismissStarterGuide}>
+                  {played ? "Đã hiểu" : "Ẩn hướng dẫn"}
+                </button>
+              </aside>
+            )}
             <div className="board-topline">
               <span className="side-label">
                 <span
@@ -515,7 +572,9 @@ export default function App() {
                     ? "Đang xem biến thể"
                     : played
                       ? "Sau nước bạn chọn"
-                      : `${currentSide} đi trước khi mở đáp án`}
+                      : mode === "training"
+                        ? `Bạn cầm ${currentSide} • ${currentSide} đi`
+                        : `${currentSide} tới lượt`}
               </span>
               <button
                 className="icon-button"
@@ -544,6 +603,7 @@ export default function App() {
                 (busy && mode === "free")
               }
               flipped={flipped}
+              tutorialSquares={starterGuide?.squares}
             />
             {preview && previewLine ? (
               <div className="replay-controls">
