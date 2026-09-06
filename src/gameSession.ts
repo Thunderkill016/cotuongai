@@ -1,9 +1,14 @@
 import { START_FEN, position, replay, type Side } from "./chess";
+import { adjudicateRepetition } from "./repetition";
 
 export type PlayerSide = Side;
 export type GamePhase = "playing" | "finished";
 export type GameResult =
-  | { kind: "checkmate" | "stalemate"; winner: PlayerSide; loser: PlayerSide }
+  | {
+      kind: "checkmate" | "stalemate" | "perpetual-check";
+      winner: PlayerSide;
+      loser: PlayerSide;
+    }
   | {
       kind: "draw";
       reason: "repetition" | "sixty-move" | "insufficient-material";
@@ -30,6 +35,8 @@ export function currentSnapshot(
   startFen = START_FEN,
 ): GameSnapshot {
   const game = position(startFen, moves);
+  const repetition = adjudicateRepetition(moves, startFen);
+  const halfMoves = Number(game.fen().split(/\s+/)[4]);
   let result: GameResult | null = null;
 
   if (game.in_checkmate()) {
@@ -45,13 +52,19 @@ export function currentSnapshot(
       winner: otherSide(game.turn()),
       loser: game.turn(),
     };
-  } else if (game.in_threefold_repetition()) {
-    // WXF long-check/long-chase adjudication is not implemented yet. Keep this
-    // explicit so the product does not claim tournament-rule correctness here.
+  } else if (repetition.kind === "perpetual-check-loss") {
+    result = {
+      kind: "perpetual-check",
+      winner: repetition.winner,
+      loser: repetition.offender,
+    };
+  } else if (repetition.kind === "fourfold-draw") {
+    // This is only the neutral/fourfold boundary. Full perpetual-chase (trường
+    // tróc) exceptions are intentionally not claimed here yet.
     result = { kind: "draw", reason: "repetition" };
   } else if (game.insufficient_material()) {
     result = { kind: "draw", reason: "insufficient-material" };
-  } else if (game.in_draw()) {
+  } else if (Number.isFinite(halfMoves) && halfMoves >= 120) {
     result = { kind: "draw", reason: "sixty-move" };
   }
 
@@ -92,8 +105,9 @@ export function appendLegalMove(
 ): string[] {
   if (!/^[a-i][0-9][a-i][0-9]$/.test(move))
     throw new Error("Nước đi không đúng định dạng.");
+  if (currentSnapshot(moves, startFen).phase === "finished")
+    throw new Error("Ván cờ đã kết thúc.");
   const game = position(startFen, moves);
-  if (game.game_over()) throw new Error("Ván cờ đã kết thúc.");
   if (!game.move(move))
     throw new Error("Nước đi không hợp lệ trong thế hiện tại.");
   return [...moves, move];
@@ -121,13 +135,14 @@ export function moveListRows(moves: string[]) {
 
 export function resultLabel(result: GameResult | null): string {
   if (!result) return "";
-  if (result.kind !== "draw") {
-    return result.kind === "checkmate"
-      ? `${sideName(result.winner)} thắng — chiếu bí.`
-      : `${sideName(result.winner)} thắng — đối thủ hết nước hợp lệ.`;
-  }
+  if (result.kind === "checkmate")
+    return `${sideName(result.winner)} thắng — chiếu bí.`;
+  if (result.kind === "stalemate")
+    return `${sideName(result.winner)} thắng — đối thủ hết nước hợp lệ.`;
+  if (result.kind === "perpetual-check")
+    return `${sideName(result.winner)} thắng — ${sideName(result.loser)} lặp chiếu Tướng liên tục và không đổi nước.`;
   if (result.reason === "repetition")
-    return "Thế cờ lặp lại. Bản này chưa phân xử đầy đủ trường chiếu/trường tróc theo luật thi đấu.";
+    return "Hòa do thế cờ lặp bốn lần. Bản này chưa tự động phân xử đầy đủ trường tróc theo luật thi đấu.";
   if (result.reason === "insufficient-material")
     return "Hòa do không còn đủ lực lượng để kết thúc ván theo bộ luật hiện tại.";
   return "Hòa theo giới hạn 60 nước không bắt quân của bộ luật hiện tại.";
