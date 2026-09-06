@@ -1,14 +1,36 @@
 import { useEffect, useState } from "react";
-import { Swords } from "lucide-react";
+import { CalendarClock, Swords } from "lucide-react";
 import App from "./App";
 import { PlayVsAI } from "./PlayVsAI";
+import { TodayPractice } from "./TodayPractice";
+import {
+  duePracticeCount,
+  GAME_PRACTICE_STORAGE_KEY,
+  parsePracticeCards,
+} from "./practiceMemory";
+import "./play.css";
+import "./today.css";
 
-function routeFromHash() {
-  return window.location.hash === "#/play" ? "play" : "coach";
+type Route = "coach" | "play" | "today";
+
+function routeFromHash(): Route {
+  if (window.location.hash === "#/play") return "play";
+  if (window.location.hash === "#/today") return "today";
+  return "coach";
+}
+
+function currentDueCount() {
+  try {
+    return duePracticeCount(
+      parsePracticeCards(localStorage.getItem(GAME_PRACTICE_STORAGE_KEY)),
+    );
+  } catch {
+    return 0;
+  }
 }
 
 export default function Root() {
-  const [route, setRoute] = useState<"coach" | "play">(routeFromHash);
+  const [route, setRoute] = useState<Route>(routeFromHash);
 
   useEffect(() => {
     const sync = () => setRoute(routeFromHash());
@@ -16,12 +38,12 @@ export default function Root() {
     return () => window.removeEventListener("hashchange", sync);
   }, []);
 
-  function openPlay() {
-    window.location.hash = "/play";
-    setRoute("play");
+  function open(route: Exclude<Route, "coach">) {
+    window.location.hash = `/${route}`;
+    setRoute(route);
   }
 
-  function closePlay() {
+  function closeRoute() {
     window.history.replaceState(
       null,
       "",
@@ -30,12 +52,31 @@ export default function Root() {
     setRoute("coach");
   }
 
-  if (route === "play") return <PlayVsAI onExit={closePlay} />;
+  if (route === "play") return <PlayVsAI onExit={closeRoute} />;
+  if (route === "today")
+    return <TodayPractice onExit={closeRoute} onPlay={() => open("play")} />;
 
+  const due = currentDueCount();
   return (
     <>
       <App />
-      <button className="global-play-launch" type="button" onClick={openPlay}>
+      <button
+        className="global-practice-launch"
+        type="button"
+        onClick={() => open("today")}
+      >
+        <CalendarClock size={18} />
+        <span>
+          <small>ÔN TỪ VÁN THẬT</small>
+          Hôm nay luyện gì
+        </span>
+        {due > 0 && <b className="due-badge">{due}</b>}
+      </button>
+      <button
+        className="global-play-launch"
+        type="button"
+        onClick={() => open("play")}
+      >
         <Swords size={18} />
         <span>
           <small>CHƠI VÁN THẬT</small>
