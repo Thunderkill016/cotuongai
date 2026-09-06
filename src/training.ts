@@ -8,20 +8,22 @@ export type SkillId =
 
 export const SKILLS: Record<SkillId, { label: string; description: string }> = {
   "recapture-check": {
-    label: "Kiểm tra bắt lại",
-    description: "Sau một nước bắt, tìm nước đối phương có thể bắt lại ngay.",
+    label: "Có bị ăn lại không?",
+    description: "Sau khi ăn quân, nhìn xem đối thủ có thể ăn lại ngay không.",
   },
   "line-piece": {
     label: "Đường Xe",
-    description: "Nhìn đường thẳng, vật cản và mục tiêu của Xe.",
+    description: "Xe đi ngang hoặc dọc; chỉ cần để ý quân chắn đường.",
   },
   "cannon-screen": {
-    label: "Giá Pháo",
-    description: "Đếm đúng một quân làm giá khi Pháo bắt quân.",
+    label: "Ngòi Pháo",
+    description:
+      "Khi Pháo ăn quân, giữa Pháo và mục tiêu phải có đúng một quân làm ngòi.",
   },
   "horse-leg": {
     label: "Chân Mã",
-    description: "Kiểm tra chân Mã trước khi tính nước đi hình chữ nhật.",
+    description:
+      "Nhìn chân Mã trước: chân bị chặn thì Mã không đi được hướng đó.",
   },
 };
 
@@ -44,63 +46,63 @@ export const EXERCISES: Exercise[] = [
   {
     id: "rook-open-file",
     title: "Đường đi của Xe",
-    concept: "Quan sát quân có thể bắt",
+    concept: "Tìm quân có thể ăn",
     description:
-      "Đỏ đi. Tìm một nước bắt quân mà đối phương không thể bắt lại ngay quân vừa đi.",
+      "Đỏ đi. Hãy ăn một quân Đen mà quân vừa đi không bị ăn lại ngay.",
     fen: "4k4/9/9/9/4p4/9/1n7/9/9/1R2K4 r - - 0 1",
     solution: "b0b3",
     kind: "practice",
     skills: ["line-piece", "recapture-check"],
     hints: [
-      "Xe đi thẳng theo hàng hoặc cột khi không có quân chắn.",
-      "Nhìn cùng cột với Xe đỏ: giữa Xe và Mã đen có quân nào không?",
-      "Thử đưa Xe từ b0 đến b3, rồi kiểm tra các nước bắt lại của Đen.",
+      "Xe đi ngang hoặc dọc, miễn là không có quân chắn đường.",
+      "Nhìn cùng cột với Xe đỏ. Giữa Xe và Mã đen có quân nào chắn không?",
+      "Thử Xe b0 ăn Mã b3. Sau đó nhìn xem Đen có quân nào ăn lại Xe được không.",
     ],
     explanation:
-      "Xe từ b0 bắt Mã ở b3 qua một đường trống. Trong thế cờ này, Đen không có nước hợp lệ bắt lại Xe ngay lượt kế tiếp.",
+      "Xe b0 ăn Mã b3 vì đường đi không bị chắn. Trong thế này, Đen không ăn lại Xe ngay được.",
   },
   {
     id: "cannon-screen",
-    title: "Một giá Pháo",
-    concept: "Đếm quân giữa Pháo và mục tiêu",
+    title: "Tìm ngòi cho Pháo",
+    concept: "Nhìn ngòi Pháo",
     description:
-      "Đỏ đi. Pháo cần đúng một quân làm giá để bắt quân. Tìm nước bắt an toàn trong một lượt.",
+      "Đỏ đi. Pháo muốn ăn quân phải nhảy qua đúng một quân làm ngòi. Tìm nước ăn mà Pháo không bị ăn lại ngay.",
     fen: "4k4/9/7r1/9/4p4/7p1/9/7C1/9/4K4 r - - 0 1",
     solution: "h2h7",
     kind: "practice",
     skills: ["cannon-screen", "recapture-check"],
     hints: [
-      "Khi bắt quân, Pháo nhảy qua đúng một quân nằm giữa nó và mục tiêu.",
-      "Nhìn cột h. Tốt đen cũng có thể làm giá cho Pháo đỏ.",
+      "Khi ăn quân, Pháo phải nhảy qua đúng một quân làm ngòi.",
+      "Nhìn cột h. Tốt đen ở giữa có thể làm ngòi cho Pháo đỏ.",
       "Thử Pháo h2 → h7. Có đúng một quân ở giữa: Tốt h4.",
     ],
     explanation:
-      "Pháo h2 bắt Xe h7 bằng cách nhảy qua Tốt h4. Đúng một quân làm giá; Đen không có nước bắt lại Pháo ngay lượt sau.",
+      "Pháo h2 ăn Xe h7 nhờ Tốt h4 làm ngòi. Sau nước này, Đen không ăn lại Pháo ngay được.",
   },
   {
     id: "horse-leg",
     title: "Chân Mã có thoáng?",
-    concept: "Kiểm tra đường đi trước khi bắt",
+    concept: "Nhìn chân Mã trước khi ăn",
     description:
-      "Đỏ đi. Tìm nước Mã bắt quân hợp lệ và kiểm tra khả năng đối phương bắt lại.",
+      "Đỏ đi. Tìm nước Mã ăn quân, rồi xem Đen có ăn lại Mã ngay được không.",
     fen: "4k4/9/9/9/4p4/9/3r5/9/2N6/4K4 r - - 0 1",
     solution: "c1d3",
     kind: "practice",
     skills: ["horse-leg", "recapture-check"],
     hints: [
-      "Mã đi hai điểm theo một hướng rồi một điểm vuông góc. Quân ở chân Mã có thể chặn nước đi.",
+      "Mã đi theo hình chữ nhật. Nếu chân Mã bị chặn thì Mã không đi được hướng đó.",
       "Từ c1 lên d3, chân Mã nằm ở c2. Ô đó có trống không?",
-      "Thử Mã c1 → d3 để bắt Xe, rồi kiểm tra nước đáp của Đen.",
+      "Thử Mã c1 → d3 ăn Xe, rồi nhìn nước đáp của Đen.",
     ],
     explanation:
-      "Mã c1 bắt Xe d3 vì chân Mã ở c2 trống. Đen không có nước hợp lệ bắt lại Mã ngay lượt sau.",
+      "Mã c1 ăn Xe d3 vì chân Mã ở c2 đang thoáng. Đen không ăn lại Mã ngay được.",
   },
   {
     id: "transfer-rook",
     title: "Tự tìm ở thế mới",
-    concept: "Áp dụng mà chưa xem gợi ý",
+    concept: "Tự tìm ở một thế khác",
     description:
-      "Đỏ đi. Dùng cách quan sát vừa luyện để tìm một nước bắt quân không bị bắt lại ngay.",
+      "Đỏ đi. Tự tìm một nước ăn quân mà quân vừa đi không bị ăn lại ngay.",
     fen: "4k4/9/9/9/4p4/9/9/2c4R1/9/4K4 r - - 0 1",
     solution: "h2c2",
     kind: "transfer",
@@ -108,10 +110,10 @@ export const EXERCISES: Exercise[] = [
     hints: [
       "Tìm quân đối phương nằm cùng hàng hoặc cột với Xe.",
       "Quan sát hàng 2 và khoảng trống giữa Xe đỏ với Pháo đen.",
-      "Thử Xe h2 → c2, rồi kiểm tra các quân Đen còn lại.",
+      "Thử Xe h2 → c2 ăn Pháo, rồi nhìn xem Đen có ăn lại Xe được không.",
     ],
     explanation:
-      "Xe h2 bắt Pháo c2 theo hàng ngang không bị chắn. Đen không có nước bắt lại Xe ngay lượt sau trong thế này.",
+      "Xe h2 ăn Pháo c2 vì hàng ngang không bị chắn. Trong thế này, Đen không ăn lại Xe ngay được.",
   },
 ];
 
@@ -123,21 +125,21 @@ export function assessAttempt(
   if (!moved.captured)
     return {
       success: false,
-      message: "Nước hợp lệ. Hãy tìm một nước bắt quân.",
+      message: "Nước này đi được, nhưng chưa ăn quân.",
       detail:
-        "Mục tiêu bài này là quan sát quân có thể bắt, rồi kiểm tra nước bắt lại của đối phương.",
+        "Bài này chỉ cần: ăn một quân, rồi nhìn xem đối thủ có ăn lại quân vừa đi được không.",
     };
   if (recaptures.length)
     return {
       success: false,
-      message: "Đối phương có thể bắt lại quân vừa đi.",
-      detail: `Hãy kiểm tra nước đáp ${recaptures[0].from} → ${recaptures[0].to}. Một nước bắt quân chưa chắc đã an toàn.`,
+      message: "Đối thủ ăn lại được ngay.",
+      detail: `Nhìn nước đáp ${recaptures[0].from} → ${recaptures[0].to}. Ăn được quân chưa chắc đã lời nếu quân vừa đi bị ăn lại ngay.`,
     };
   return {
     success: true,
-    message: "Bạn đã tìm được nước bắt phù hợp.",
+    message: "Đúng rồi — nước này ăn quân mà không bị ăn lại ngay.",
     detail:
-      "Nước bắt hợp lệ và đối phương không có nước bắt lại ngay quân vừa đi. Đây là kết quả của bài quan sát một lượt, chưa phải kết luận tối ưu toàn ván.",
+      "Trong thế này, quân vừa đi không bị ăn lại ngay. Điều đó chưa có nghĩa đây là nước hay nhất của cả ván.",
   };
 }
 
@@ -348,15 +350,15 @@ export function recommendExercise(
     } else if (assistedOnly) {
       score = 400;
       reason =
-        "Bạn đã làm được nhưng có trợ giúp; thử lại để tạo bằng chứng độc lập.";
+        "Lần trước bạn cần gợi ý. Thử lại xem lần này có tự tìm ra không.";
     } else if (!history.length && !exposures[exercise.id]) {
       if (exercise.kind === "practice") {
         score = 300;
-        reason = "Bài nền tảng này chưa có lần thử nào.";
+        reason = "Bài này bạn chưa thử. Làm một lần để quen cách nhìn.";
       } else if (allPracticeSeen) {
         score = 350;
         reason =
-          "Các bài nền tảng đã được xem; chuyển sang thế mới để kiểm tra khả năng áp dụng.";
+          "Bạn đã thử các bài cơ bản. Sang một thế mới để xem có tự nhận ra nước đi không.";
       } else {
         score = 100;
         reason =
@@ -365,7 +367,7 @@ export function recommendExercise(
     } else if (!independent) {
       score = 250;
       reason =
-        "Bài này chưa có lần đúng đầu tiên mà không dùng gợi ý hay lời giải.";
+        "Bài này bạn chưa tự làm đúng mà không cần gợi ý hay xem lời giải.";
     } else {
       score = 50;
     }
@@ -385,17 +387,17 @@ export function coachChoices(fen: string, move: string): CoachChoice[] {
   return [
     {
       id: "reply-check",
-      text: "Trước khi xem biến thể, hãy tìm nước chiếu hoặc nước bắt quân mà đối phương có thể đáp lại.",
+      text: "Trước khi xem máy tính, thử tìm nước chiếu hoặc nước ăn quân và nghĩ xem đối thủ sẽ đáp thế nào.",
     },
     {
       id: "capture-check",
       text: result.moved.captured
-        ? "Bạn vừa bắt quân. Hãy kiểm tra xem quân vừa đi có bị bắt lại ngay không."
-        : "Sau nước vừa đi, quân nào của bạn đang có thể bị đối phương tấn công?",
+        ? "Bạn vừa ăn quân. Nhìn xem quân vừa đi có bị đối thủ ăn lại ngay không."
+        : "Sau nước vừa đi, quân nào của bạn đang bị đối thủ nhòm tới?",
     },
     {
       id: "compare-lines",
-      text: "Chọn thêm một nước ứng viên. Với mỗi nước, thử hình dung một nước đáp mạnh của đối phương rồi mới so sánh.",
+      text: "Tính thêm một nước nữa. Với mỗi nước, thử nghĩ nước đáp mạnh nhất của đối thủ rồi mới so sánh.",
     },
   ];
 }

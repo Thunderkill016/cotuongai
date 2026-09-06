@@ -134,21 +134,21 @@ export default function App() {
         ? {
             step: 3,
             title: "Bạn vừa đi nước đầu tiên.",
-            text: "Xe đỏ đã bắt Mã. Bây giờ hãy nhìn xem Đen có thể bắt lại Xe ngay hay không.",
+            text: "Xe đỏ vừa ăn Mã. Giờ nhìn xem Đen có quân nào ăn lại Xe ngay được không.",
             squares: ["b3"],
           }
         : candidate === "b0b3"
           ? {
               step: 3,
-              title: "Xác nhận nước bạn vừa chọn.",
-              text: "Bạn đã chọn Xe b0 → b3 để bắt Mã. Bấm ‘Thử nước này’ ở bảng bên phải.",
+              title: "Đi nước này nhé.",
+              text: "Bạn đã chọn Xe b0 → b3 ăn Mã. Bấm ‘Đi nước này’ để xem Đen đáp ra sao.",
               squares: ["b0", "b3"],
             }
           : selected === "b0"
             ? {
                 step: 2,
-                title: "Bấm quân Mã đen để bắt.",
-                text: "Các điểm được đánh dấu là nơi Xe có thể đi. Bấm quân Mã 馬 ở b3.",
+                title: "Bấm Mã đen để ăn.",
+                text: "Các chấm sáng là chỗ Xe đi được. Bấm quân Mã 馬 ở b3 để ăn quân.",
                 squares: ["b0", "b3"],
               }
             : {
@@ -525,19 +525,17 @@ export default function App() {
         <section className="page-heading">
           <div>
             <div className="eyebrow">
-              {mode === "training"
-                ? "BÀI LUYỆN NỀN TẢNG"
-                : "KHÔNG GIAN PHÂN TÍCH"}
+              {mode === "training" ? "BÀI NHẬP MÔN" : "BÀN PHÂN TÍCH"}
             </div>
             <h1>
               {mode === "training"
-                ? "Nhìn trước một nước."
-                : "Mỗi nước đi, một câu hỏi."}
+                ? "Tập nhìn trước một nước."
+                : "Tự bày cờ và tính nước."}
             </h1>
             <p>
               {mode === "training"
-                ? "Quan sát. Chọn nước. Kiểm tra cách đối phương đáp lại."
-                : "Thử các nước của cả hai bên, hoặc nhờ Pikafish đi tiếp."}
+                ? "Ăn quân chưa đủ — hãy nhìn xem đối thủ đáp lại thế nào."
+                : "Đi thử các nước của hai bên, hoặc để Pikafish tính tiếp."}
             </p>
           </div>
           <button className="help-link" onClick={() => setDialog("help")}>
@@ -633,8 +631,7 @@ export default function App() {
             ) : (
               <div className="board-bottomline">
                 <span>
-                  <span className="legend-dot" />
-                  Điểm đến hợp lệ
+                  <span className="legend-dot" />Ô đi được
                 </span>
                 <button
                   onClick={undo}
@@ -665,12 +662,12 @@ export default function App() {
               )}
               <span>
                 {engineState === "loading"
-                  ? "Đang nạp Pikafish và dữ liệu phân tích… Bạn có thể làm bài ngay."
+                  ? "Đang nạp Pikafish… Bạn vẫn có thể làm bài ngay."
                   : engineState === "error"
                     ? engineError
                     : busy
-                      ? "Pikafish đang kiểm tra các biến thể…"
-                      : "Pikafish sẵn sàng · Phân tích trực tiếp trên máy bạn"}
+                      ? "Pikafish đang tính các nước…"
+                      : "Pikafish đã sẵn sàng · tính trực tiếp trên máy bạn"}
               </span>
               {engineState === "error" && (
                 <button onClick={() => engine.current?.init().catch(() => {})}>
@@ -688,7 +685,7 @@ export default function App() {
               <div>
                 <span className="eyebrow">
                   {mode === "training"
-                    ? `${exercise.kind === "transfer" ? "TỰ KIỂM TRA" : "LUYỆN CÓ HƯỚNG DẪN"} · ${exerciseIndex + 1}/${EXERCISES.length}`
+                    ? `${exercise.kind === "transfer" ? "TỰ LÀM" : "CÓ HƯỚNG DẪN"} · ${exerciseIndex + 1}/${EXERCISES.length}`
                     : "TỰ KHÁM PHÁ"}
                 </span>
                 <h2>
@@ -699,7 +696,7 @@ export default function App() {
             <p className="lesson-description">
               {mode === "training"
                 ? exercise.description
-                : "Chọn tối đa 3 nước ứng viên trước khi đi. Phân tích chỉ mở khi bạn muốn xem."}
+                : "Có thể tính trước tối đa 3 nước. Chỉ mở Pikafish khi bạn muốn xem."}
             </p>
             {mode === "training" && (
               <div className="lesson-track" aria-label="Chọn bài">
@@ -722,7 +719,7 @@ export default function App() {
                 <div className="section-label">
                   <span>
                     <ScanLine size={17} />
-                    BẠN ĐANG CÂN NHẮC
+                    CÁC NƯỚC ĐANG TÍNH
                   </span>
                   <span>{candidates.length}/3 nước</span>
                 </div>
@@ -769,7 +766,7 @@ export default function App() {
                   onClick={submit}
                   disabled={!candidate || busy}
                 >
-                  {mode === "training" ? "Thử nước này" : "Đi nước này"}
+                  {mode === "training" ? "Đi nước này" : "Đi nước này"}
                   <ArrowRight size={18} />
                 </button>
               </section>
@@ -811,15 +808,15 @@ export default function App() {
               <section className="hint-section">
                 <div className="hint-title">
                   <Lightbulb size={18} />
-                  <strong>Một chút gợi mở</strong>
+                  <strong>Gợi ý</strong>
                   <span>{hints}/3</span>
                 </div>
                 {hints ? (
                   <p>{exercise.hints[hints - 1]}</p>
                 ) : (
                   <p>
-                    Chưa cần tìm nước hay nhất. Hãy bắt đầu từ những gì bạn nhìn
-                    thấy trên bàn.
+                    Chưa cần tìm nước hay nhất. Trước hết nhìn xem quân nào đang
+                    có thể ăn quân đối thủ.
                   </p>
                 )}
                 <button
@@ -832,7 +829,7 @@ export default function App() {
                   }}
                 >
                   {hints === 0
-                    ? "Cho tôi một gợi ý"
+                    ? "Gợi ý một chút"
                     : hints < 3
                       ? "Gợi ý rõ hơn"
                       : "Đã mở hết gợi ý"}
@@ -847,15 +844,15 @@ export default function App() {
                   <span>
                     <Sparkles size={16} />
                     {coachBusy
-                      ? "ĐANG CHỌN CÂU HỎI"
+                      ? "ĐANG CHỌN GỢI Ý"
                       : coach?.source === "ai"
-                        ? "CÂU HỎI DO AI CHỌN"
-                        : "CÂU HỎI HƯỚNG DẪN"}
+                        ? "GỢI Ý TỪ AI"
+                        : "GỢI Ý LUYỆN CỜ"}
                   </span>
                 </div>
                 <p>
                   {coachBusy
-                    ? "Hãy tự hình dung nước đáp của đối phương trong lúc chờ."
+                    ? "Trong lúc chờ, thử nghĩ xem đối thủ sẽ đáp nước nào."
                     : coach?.text}
                 </p>
               </section>
@@ -871,7 +868,7 @@ export default function App() {
                 {analysisOpen
                   ? "Ẩn phân tích"
                   : mode === "training"
-                    ? "Xem lời giải & phân tích"
+                    ? "Xem lời giải và Pikafish"
                     : "Phân tích bằng Pikafish"}
               </button>
             </div>

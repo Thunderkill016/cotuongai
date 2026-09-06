@@ -71,15 +71,15 @@ export function reviewIntervalMs(
 function reasonFor(kind: MistakeKind): string {
   switch (kind) {
     case "unsafe-capture":
-      return "Nước bắt gần nhất bị đối phương bắt lại; ôn lại để tập kiểm tra nước đáp.";
+      return "Lần trước quân vừa ăn bị đối thủ ăn lại ngay. Ôn lại để tập nhìn nước đáp trước khi đi.";
     case "missed-capture":
-      return "Lần gần nhất chưa tìm đúng nước bắt; ôn lại sau một khoảng nghỉ ngắn.";
+      return "Lần trước bạn chưa tìm đúng nước ăn quân. Nghỉ một chút rồi thử lại.";
     case "answer-revealed":
-      return "Đã xem lời giải; cần truy hồi lại sau khi trí nhớ ngắn hạn giảm bớt.";
+      return "Bạn đã xem lời giải. Để một lúc rồi tự tìm lại xem còn nhớ cách làm không.";
     case "assisted-success":
-      return "Đã làm đúng với gợi ý; cần một lần tự làm độc lập sau đó.";
+      return "Lần trước bạn làm đúng nhờ gợi ý. Lần này thử tự tìm mà không mở gợi ý.";
     case "independent-success":
-      return "Đã làm đúng độc lập; lịch ôn được giãn ra để kiểm tra khả năng nhớ lâu hơn.";
+      return "Bạn đã tự làm đúng. Lần ôn sau sẽ cách xa hơn để xem còn nhớ cách nhìn không.";
   }
 }
 

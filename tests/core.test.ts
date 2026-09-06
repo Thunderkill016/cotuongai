@@ -222,7 +222,7 @@ describe("adaptive practice recommendation", () => {
     const attempts = [attempt("rook-open-file", true, { hints: 1 })];
     const recommendation = recommendExercise(attempts, {});
     expect(recommendation.exercise.id).toBe("rook-open-file");
-    expect(recommendation.reason).toContain("trợ giúp");
+    expect(recommendation.reason).toContain("gợi ý");
   });
 
   it("summarizes evidence without calling it mastery", () => {
