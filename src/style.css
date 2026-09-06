@@ -1147,3 +1147,75 @@ dialog p {
     grid-template-columns: 1fr;
   }
 }
+
+.starter-guide {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #b7c5b8;
+  border-radius: 12px;
+  background: #f7f3e8;
+  box-shadow: 0 8px 24px rgb(56 45 25 / 7%);
+}
+.starter-guide strong {
+  display: block;
+  color: #173f35;
+  font-size: 1rem;
+}
+.starter-guide p {
+  margin: 4px 0 0;
+  line-height: 1.5;
+  color: #5d604f;
+}
+.starter-guide button {
+  border: 0;
+  background: transparent;
+  color: #536b5c;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.starter-step {
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #214f42;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.square.tutorial-focus::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border: 3px solid #d46d2f;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgb(212 109 47 / 16%);
+  pointer-events: none;
+  animation: tutorialPulse 1.4s ease-in-out infinite;
+}
+@keyframes tutorialPulse {
+  50% {
+    transform: scale(1.08);
+    opacity: 0.72;
+  }
+}
+@media (max-width: 720px) {
+  .starter-guide {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+  .starter-guide button {
+    grid-column: 2;
+    justify-self: start;
+    padding: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .square.tutorial-focus::after {
+    animation: none;
+  }
+}
