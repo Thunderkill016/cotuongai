@@ -1,4 +1,4 @@
-name: Inspect npm audit
+name: Verify dependency security fix
 
 on:
   push:
@@ -20,5 +20,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Print exact audit graph
-        run: npm audit --json || true
+      - name: Apply advisory-fixed versions only
+        run: npm install --save-dev --save-exact vite@7.3.6 vitest@3.2.7
+      - name: Reject remaining high or critical advisories
+        run: npm audit --audit-level=high
+      - name: Full quality gate
+        run: npm run quality
+      - name: Commit verified dependency lock update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "No dependency changes"
+          else
+            git commit -m "fix: patch Vite and Vitest security advisories"
+            git push origin HEAD:fix/npm-audit-v1
+          fi
