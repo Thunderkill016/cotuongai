@@ -22,8 +22,11 @@ jobs:
           echo "ae12110024f40ad15a8a164d80c88fa2a8f05f04c20b8b803c84734c9b6bfad5  source.tgz" | sha256sum -c -
       - name: Replace bootstrap with source tree
         run: |
+          mv .git /tmp/cotuongai-git
           rm -rf .bootstrap source.b64
           tar xzf source.tgz
+          rm -rf .git
+          mv /tmp/cotuongai-git .git
           rm source.tgz
       - name: Verify project
         run: |
