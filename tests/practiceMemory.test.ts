@@ -87,7 +87,7 @@ describe("post-game practice memory", () => {
   });
 
   it("puts due severe mistakes before future cards", () => {
-    const now = 50_000;
+    const now = 20_000_000;
     const severe = ingestReviewMoment([], moment("major-miss"), "h0g2", 0)[0];
     const future = {
       ...ingestReviewMoment([], moment("alternative"), "b0c2", 0)[0],
