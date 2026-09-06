@@ -1,0 +1,24 @@
+name: Inspect npm audit
+
+on:
+  push:
+    branches: ["fix/npm-audit-v1"]
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Print exact audit graph
+        run: npm audit --json || true
