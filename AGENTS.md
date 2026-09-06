@@ -2,7 +2,7 @@
 
 This is a separate Xiangqi training project. Atoryn-specific milestones and commands do not apply. Preserve the workspace's typecheck, formatting, tests, and destructive-action rules.
 
-Read `README.md` before substantial changes. Before changing chess content, curriculum, AI coaching, opening/endgame material, or historical claims, also read `src/knowledgeVault.ts` and `docs/XIANGQI_KNOWLEDGE_VAULT.md`. For user-facing Vietnamese copy, read `docs/VI_COPY_GUIDE.md` and `docs/VI_XIANGQI_LANGUAGE_CORPUS.md`.
+Read `README.md` before substantial changes. The current autonomous execution mission is `docs/CODEX_MAX_MISSION.md`; when operating in Codex/agent mode, read it before planning or coding and continue through its priority order until a real hard stop is reached. Before changing chess content, curriculum, AI coaching, opening/endgame material, or historical claims, also read `src/knowledgeVault.ts` and `docs/XIANGQI_KNOWLEDGE_VAULT.md`. For user-facing Vietnamese copy, read `docs/VI_COPY_GUIDE.md` and `docs/VI_XIANGQI_LANGUAGE_CORPUS.md`.
 
 - Legality is deterministic. Engine output is bounded analysis, never an absolute proof of positional explanations.
 - Pikafish/rules code decides chess truth; an LLM may explain, compare, plan practice, or select from verified choices, but must not invent legal moves, forced wins, opening theory, historical provenance, or endgame results.
