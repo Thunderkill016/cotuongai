@@ -123,10 +123,11 @@ export function moveListRows(moves: string[]) {
 
 export function resultLabel(result: GameResult | null): string {
   if (!result) return "";
-  if (result.kind === "checkmate")
-    return `${sideName(result.winner)} thắng — chiếu bí.`;
-  if (result.kind === "stalemate")
-    return `${sideName(result.winner)} thắng — đối thủ hết nước hợp lệ.`;
+  if (result.kind !== "draw") {
+    return result.kind === "checkmate"
+      ? `${sideName(result.winner)} thắng — chiếu bí.`
+      : `${sideName(result.winner)} thắng — đối thủ hết nước hợp lệ.`;
+  }
   if (result.reason === "repetition")
     return "Thế cờ lặp lại. Bản này chưa phân xử đầy đủ trường chiếu/trường tróc theo luật thi đấu.";
   if (result.reason === "insufficient-material")
