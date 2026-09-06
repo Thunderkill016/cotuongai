@@ -16,6 +16,9 @@ export class Xiangqi {
   in_check(): boolean;
   in_checkmate(): boolean;
   in_stalemate(): boolean;
+  in_draw(): boolean;
+  insufficient_material(): boolean;
   in_threefold_repetition(): boolean;
+  game_over(): boolean;
   validate_fen(fen: string): { valid: boolean; error: string };
 }
