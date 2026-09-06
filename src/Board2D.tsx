@@ -47,11 +47,26 @@ export function Board2D({
       >
         <svg className="board-lines" viewBox="0 0 540 600" aria-hidden="true">
           <defs>
-            <marker id="arrow-head" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
+            <marker
+              id="arrow-head"
+              markerWidth="6"
+              markerHeight="6"
+              refX="4"
+              refY="3"
+              orient="auto"
+            >
               <path d="M0,0 L6,3 L0,6Z" fill="#bb642e" />
             </marker>
           </defs>
-          <rect x="46" y="46" width="448" height="502" rx="1" fill="none" strokeWidth="2" />
+          <rect
+            x="46"
+            y="46"
+            width="448"
+            height="502"
+            rx="1"
+            fill="none"
+            strokeWidth="2"
+          />
           {Array.from({ length: 10 }, (_, r) => (
             <path key={`h${r}`} d={`M54 ${54 + r * 54} H486`} />
           ))}
@@ -62,8 +77,12 @@ export function Board2D({
             </g>
           ))}
           <path d="M54 270V324 M486 270V324 M216 54L324 162 M324 54L216 162 M216 432L324 540 M324 432L216 540" />
-          <text x="172" y="305" className="river">SÔNG SỞ</text>
-          <text x="366" y="305" className="river">BỜ HÁN</text>
+          <text x="172" y="305" className="river">
+            SÔNG SỞ
+          </text>
+          <text x="366" y="305" className="river">
+            BỜ HÁN
+          </text>
           {FILES.split("").map((_, c) => (
             <text key={c} x={54 + c * 54} y="579" className="coordinate">
               {FILES[flipped ? 8 - c : c]}
@@ -81,7 +100,9 @@ export function Board2D({
             const [x, y] = coords(sq);
             return (
               <g key={sq} className="board-marks">
-                <path d={`M${x - 9} ${y - 15}v6h-6 M${x + 9} ${y - 15}v6h6 M${x - 9} ${y + 15}v-6h-6 M${x + 9} ${y + 15}v-6h6`} />
+                <path
+                  d={`M${x - 9} ${y - 15}v6h-6 M${x + 9} ${y - 15}v6h6 M${x - 9} ${y + 15}v-6h-6 M${x + 9} ${y + 15}v-6h6`}
+                />
               </g>
             );
           })}
@@ -92,11 +113,14 @@ export function Board2D({
           const sq = squareAt(flipped ? 9 - row : row, flipped ? 8 - col : col);
           const piece = game.get(sq);
           const destination = destinations.includes(sq);
-          const recent = lastMove?.slice(0, 2) === sq || lastMove?.slice(2) === sq;
+          const recent =
+            lastMove?.slice(0, 2) === sq || lastMove?.slice(2) === sq;
           return (
             <button
               key={sq}
-              ref={(el) => { refs.current[i] = el; }}
+              ref={(el) => {
+                refs.current[i] = el;
+              }}
               type="button"
               role="gridcell"
               aria-rowindex={row + 1}
@@ -108,7 +132,9 @@ export function Board2D({
               aria-disabled={disabled || undefined}
               tabIndex={focus === i ? 0 : -1}
               onFocus={() => setFocus(i)}
-              onClick={() => { if (!disabled) onSquare(sq); }}
+              onClick={() => {
+                if (!disabled) onSquare(sq);
+              }}
               onKeyDown={(event) => {
                 const shifts: Record<string, number> = {
                   ArrowUp: -9,
@@ -125,15 +151,25 @@ export function Board2D({
               }}
             >
               {piece ? (
-                <span className={`piece ${piece.color === "r" ? "red" : "black"}`}>
-                  <span className="piece-glyph">{GLYPHS[piece.color + piece.type]}</span>
+                <span
+                  className={`piece ${piece.color === "r" ? "red" : "black"}`}
+                >
+                  <span className="piece-glyph">
+                    {GLYPHS[piece.color + piece.type]}
+                  </span>
                 </span>
-              ) : destination ? <span className="move-dot" /> : null}
+              ) : destination ? (
+                <span className="move-dot" />
+              ) : null}
             </button>
           );
         })}
         {arrowPoints && (
-          <svg className="board-arrows" viewBox="0 0 540 600" aria-hidden="true">
+          <svg
+            className="board-arrows"
+            viewBox="0 0 540 600"
+            aria-hidden="true"
+          >
             <path
               d={`M${arrowPoints[0].join(" ")} L${arrowPoints[1].join(" ")}`}
               stroke="#bb642e"

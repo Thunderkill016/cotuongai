@@ -79,16 +79,56 @@ function soldierUnit(color: THREE.Color, elite = false) {
   const dark = standardMaterial("#3f332a");
   const metal = standardMaterial(BRASS, 0.42);
 
-  addBodyPart(group, new THREE.CylinderGeometry(0.18, 0.23, elite ? 0.65 : 0.55, 8), cloth, [0, 0.52, 0]);
-  addBodyPart(group, new THREE.SphereGeometry(0.15, 12, 8), skin, [0, elite ? 0.97 : 0.9, 0]);
-  addBodyPart(group, new THREE.CylinderGeometry(0.17, 0.19, 0.12, 8), metal, [0, elite ? 1.09 : 1.02, 0]);
-  addBodyPart(group, new THREE.BoxGeometry(0.12, 0.44, 0.12), dark, [-0.11, 0.18, 0]);
-  addBodyPart(group, new THREE.BoxGeometry(0.12, 0.44, 0.12), dark, [0.11, 0.18, 0]);
+  addBodyPart(
+    group,
+    new THREE.CylinderGeometry(0.18, 0.23, elite ? 0.65 : 0.55, 8),
+    cloth,
+    [0, 0.52, 0],
+  );
+  addBodyPart(group, new THREE.SphereGeometry(0.15, 12, 8), skin, [
+    0,
+    elite ? 0.97 : 0.9,
+    0,
+  ]);
+  addBodyPart(group, new THREE.CylinderGeometry(0.17, 0.19, 0.12, 8), metal, [
+    0,
+    elite ? 1.09 : 1.02,
+    0,
+  ]);
+  addBodyPart(
+    group,
+    new THREE.BoxGeometry(0.12, 0.44, 0.12),
+    dark,
+    [-0.11, 0.18, 0],
+  );
+  addBodyPart(
+    group,
+    new THREE.BoxGeometry(0.12, 0.44, 0.12),
+    dark,
+    [0.11, 0.18, 0],
+  );
   if (elite) {
-    addBodyPart(group, new THREE.BoxGeometry(0.62, 0.13, 0.22), metal, [0, 0.76, 0]);
-    addBodyPart(group, new THREE.CylinderGeometry(0.035, 0.035, 0.6, 6), dark, [0.25, 0.73, 0], [0, 0, -0.1]);
+    addBodyPart(
+      group,
+      new THREE.BoxGeometry(0.62, 0.13, 0.22),
+      metal,
+      [0, 0.76, 0],
+    );
+    addBodyPart(
+      group,
+      new THREE.CylinderGeometry(0.035, 0.035, 0.6, 6),
+      dark,
+      [0.25, 0.73, 0],
+      [0, 0, -0.1],
+    );
   } else {
-    addBodyPart(group, new THREE.CylinderGeometry(0.025, 0.025, 0.9, 6), dark, [0.24, 0.64, 0], [0, 0, -0.1]);
+    addBodyPart(
+      group,
+      new THREE.CylinderGeometry(0.025, 0.025, 0.9, 6),
+      dark,
+      [0.24, 0.64, 0],
+      [0, 0, -0.1],
+    );
   }
   return group;
 }
@@ -100,15 +140,50 @@ function horseUnit(color: THREE.Color) {
   const skin = standardMaterial("#d7aa7d");
   const dark = standardMaterial("#2f2a26");
 
-  addBodyPart(group, new THREE.CapsuleGeometry(0.22, 0.52, 6, 10), horse, [0, 0.52, 0], [Math.PI / 2, 0, 0]);
-  addBodyPart(group, new THREE.CylinderGeometry(0.12, 0.16, 0.42, 8), horse, [0, 0.76, -0.25], [-0.45, 0, 0]);
-  addBodyPart(group, new THREE.SphereGeometry(0.15, 10, 8), horse, [0, 0.98, -0.36]);
+  addBodyPart(
+    group,
+    new THREE.CapsuleGeometry(0.22, 0.52, 6, 10),
+    horse,
+    [0, 0.52, 0],
+    [Math.PI / 2, 0, 0],
+  );
+  addBodyPart(
+    group,
+    new THREE.CylinderGeometry(0.12, 0.16, 0.42, 8),
+    horse,
+    [0, 0.76, -0.25],
+    [-0.45, 0, 0],
+  );
+  addBodyPart(
+    group,
+    new THREE.SphereGeometry(0.15, 10, 8),
+    horse,
+    [0, 0.98, -0.36],
+  );
   for (const x of [-0.16, 0.16]) {
-    addBodyPart(group, new THREE.CylinderGeometry(0.045, 0.05, 0.48, 6), dark, [x, 0.22, -0.18]);
-    addBodyPart(group, new THREE.CylinderGeometry(0.045, 0.05, 0.48, 6), dark, [x, 0.22, 0.2]);
+    addBodyPart(group, new THREE.CylinderGeometry(0.045, 0.05, 0.48, 6), dark, [
+      x,
+      0.22,
+      -0.18,
+    ]);
+    addBodyPart(group, new THREE.CylinderGeometry(0.045, 0.05, 0.48, 6), dark, [
+      x,
+      0.22,
+      0.2,
+    ]);
   }
-  addBodyPart(group, new THREE.CylinderGeometry(0.14, 0.18, 0.45, 8), cloth, [0, 0.96, 0.1]);
-  addBodyPart(group, new THREE.SphereGeometry(0.13, 10, 8), skin, [0, 1.24, 0.08]);
+  addBodyPart(
+    group,
+    new THREE.CylinderGeometry(0.14, 0.18, 0.45, 8),
+    cloth,
+    [0, 0.96, 0.1],
+  );
+  addBodyPart(
+    group,
+    new THREE.SphereGeometry(0.13, 10, 8),
+    skin,
+    [0, 1.24, 0.08],
+  );
   return group;
 }
 
@@ -118,16 +193,59 @@ function elephantUnit(color: THREE.Color) {
   const cloth = standardMaterial(color);
   const ivory = standardMaterial("#ddd2b5");
 
-  addBodyPart(group, new THREE.SphereGeometry(0.38, 12, 9), hide, [0, 0.55, 0], undefined, [1.05, 0.8, 1.25]);
-  addBodyPart(group, new THREE.SphereGeometry(0.25, 10, 8), hide, [0, 0.64, -0.42]);
-  addBodyPart(group, new THREE.CylinderGeometry(0.07, 0.045, 0.58, 8), hide, [0, 0.4, -0.61], [0.42, 0, 0]);
+  addBodyPart(
+    group,
+    new THREE.SphereGeometry(0.38, 12, 9),
+    hide,
+    [0, 0.55, 0],
+    undefined,
+    [1.05, 0.8, 1.25],
+  );
+  addBodyPart(
+    group,
+    new THREE.SphereGeometry(0.25, 10, 8),
+    hide,
+    [0, 0.64, -0.42],
+  );
+  addBodyPart(
+    group,
+    new THREE.CylinderGeometry(0.07, 0.045, 0.58, 8),
+    hide,
+    [0, 0.4, -0.61],
+    [0.42, 0, 0],
+  );
   for (const x of [-0.22, 0.22]) {
-    addBodyPart(group, new THREE.CylinderGeometry(0.07, 0.08, 0.46, 7), hide, [x, 0.24, -0.14]);
-    addBodyPart(group, new THREE.CylinderGeometry(0.07, 0.08, 0.46, 7), hide, [x, 0.24, 0.22]);
+    addBodyPart(group, new THREE.CylinderGeometry(0.07, 0.08, 0.46, 7), hide, [
+      x,
+      0.24,
+      -0.14,
+    ]);
+    addBodyPart(group, new THREE.CylinderGeometry(0.07, 0.08, 0.46, 7), hide, [
+      x,
+      0.24,
+      0.22,
+    ]);
   }
-  addBodyPart(group, new THREE.BoxGeometry(0.55, 0.16, 0.55), cloth, [0, 0.86, 0.05]);
-  addBodyPart(group, new THREE.ConeGeometry(0.05, 0.32, 6), ivory, [-0.12, 0.62, -0.61], [Math.PI / 2, 0, 0]);
-  addBodyPart(group, new THREE.ConeGeometry(0.05, 0.32, 6), ivory, [0.12, 0.62, -0.61], [Math.PI / 2, 0, 0]);
+  addBodyPart(
+    group,
+    new THREE.BoxGeometry(0.55, 0.16, 0.55),
+    cloth,
+    [0, 0.86, 0.05],
+  );
+  addBodyPart(
+    group,
+    new THREE.ConeGeometry(0.05, 0.32, 6),
+    ivory,
+    [-0.12, 0.62, -0.61],
+    [Math.PI / 2, 0, 0],
+  );
+  addBodyPart(
+    group,
+    new THREE.ConeGeometry(0.05, 0.32, 6),
+    ivory,
+    [0.12, 0.62, -0.61],
+    [Math.PI / 2, 0, 0],
+  );
   return group;
 }
 
@@ -136,9 +254,20 @@ function chariotUnit(color: THREE.Color) {
   const wood = standardMaterial("#5d4231");
   const cloth = standardMaterial(color);
   const metal = standardMaterial(BRASS, 0.45);
-  addBodyPart(group, new THREE.BoxGeometry(0.66, 0.22, 0.62), wood, [0, 0.32, 0]);
+  addBodyPart(
+    group,
+    new THREE.BoxGeometry(0.66, 0.22, 0.62),
+    wood,
+    [0, 0.32, 0],
+  );
   for (const x of [-0.38, 0.38]) {
-    addBodyPart(group, new THREE.CylinderGeometry(0.19, 0.19, 0.09, 12), metal, [x, 0.27, 0], [0, 0, Math.PI / 2]);
+    addBodyPart(
+      group,
+      new THREE.CylinderGeometry(0.19, 0.19, 0.09, 12),
+      metal,
+      [x, 0.27, 0],
+      [0, 0, Math.PI / 2],
+    );
   }
   const warrior = soldierUnit(color, true);
   warrior.scale.setScalar(0.72);
@@ -152,12 +281,34 @@ function cannonUnit(color: THREE.Color) {
   const wood = standardMaterial("#5b4430");
   const metal = standardMaterial("#615d54", 0.38);
   const cloth = standardMaterial(color);
-  addBodyPart(group, new THREE.BoxGeometry(0.65, 0.15, 0.5), wood, [0, 0.28, 0.02]);
+  addBodyPart(
+    group,
+    new THREE.BoxGeometry(0.65, 0.15, 0.5),
+    wood,
+    [0, 0.28, 0.02],
+  );
   for (const x of [-0.34, 0.34]) {
-    addBodyPart(group, new THREE.CylinderGeometry(0.16, 0.16, 0.08, 12), wood, [x, 0.25, 0.04], [0, 0, Math.PI / 2]);
+    addBodyPart(
+      group,
+      new THREE.CylinderGeometry(0.16, 0.16, 0.08, 12),
+      wood,
+      [x, 0.25, 0.04],
+      [0, 0, Math.PI / 2],
+    );
   }
-  addBodyPart(group, new THREE.CylinderGeometry(0.11, 0.17, 0.85, 12), metal, [0, 0.58, -0.05], [Math.PI / 2, 0, 0]);
-  addBodyPart(group, new THREE.BoxGeometry(0.42, 0.1, 0.44), cloth, [0, 0.43, 0.06]);
+  addBodyPart(
+    group,
+    new THREE.CylinderGeometry(0.11, 0.17, 0.85, 12),
+    metal,
+    [0, 0.58, -0.05],
+    [Math.PI / 2, 0, 0],
+  );
+  addBodyPart(
+    group,
+    new THREE.BoxGeometry(0.42, 0.1, 0.44),
+    cloth,
+    [0, 0.43, 0.06],
+  );
   return group;
 }
 
@@ -165,10 +316,21 @@ function commanderUnit(color: THREE.Color, guard = false) {
   const group = soldierUnit(color, true);
   group.scale.setScalar(guard ? 0.95 : 1.13);
   const plume = standardMaterial(guard ? "#d3b46b" : "#d94a3e");
-  addBodyPart(group, new THREE.ConeGeometry(0.07, guard ? 0.32 : 0.48, 8), plume, [0, guard ? 1.33 : 1.42, 0]);
+  addBodyPart(
+    group,
+    new THREE.ConeGeometry(0.07, guard ? 0.32 : 0.48, 8),
+    plume,
+    [0, guard ? 1.33 : 1.42, 0],
+  );
   if (!guard) {
     const cape = standardMaterial(color);
-    addBodyPart(group, new THREE.BoxGeometry(0.48, 0.58, 0.06), cape, [0, 0.72, 0.2], [0.12, 0, 0]);
+    addBodyPart(
+      group,
+      new THREE.BoxGeometry(0.48, 0.58, 0.06),
+      cape,
+      [0, 0.72, 0.2],
+      [0.12, 0, 0],
+    );
   }
   return group;
 }
@@ -314,7 +476,9 @@ export function Battlefield3D({
     renderer.domElement.addEventListener("pointerdown", pickSquare);
 
     let frame = 0;
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const animate = () => {
       controls.update();
       renderer.render(scene, camera);
@@ -396,25 +560,43 @@ export function Battlefield3D({
       addLine(root, c, d, DARK_WOOD, 0.03);
     }
 
-    const hitMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+    const hitMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+    });
     for (let rank = 0; rank <= 9; rank++) {
       for (let file = 0; file < 9; file++) {
         const sq = `${FILES[file]}${rank}`;
         const [x, z] = squareToWorld(sq, flipped);
-        const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 20), hitMaterial.clone());
+        const hit = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.42, 0.42, 0.04, 20),
+          hitMaterial.clone(),
+        );
         hit.position.set(x, 0.12, z);
         hit.userData.square = sq;
         root.add(hit);
 
         let markerColor: THREE.Color | null = null;
         if (tutorialSquares.includes(sq)) markerColor = TUTORIAL;
-        if (lastMove?.slice(0, 2) === sq || lastMove?.slice(2) === sq) markerColor = LAST;
+        if (lastMove?.slice(0, 2) === sq || lastMove?.slice(2) === sq)
+          markerColor = LAST;
         if (destinations.includes(sq)) markerColor = MOVE;
         if (selected === sq) markerColor = SELECT;
         if (markerColor) {
           const marker = new THREE.Mesh(
-            new THREE.CylinderGeometry(selected === sq ? 0.33 : 0.2, selected === sq ? 0.33 : 0.2, 0.035, 24),
-            new THREE.MeshStandardMaterial({ color: markerColor, emissive: markerColor, emissiveIntensity: 0.28, roughness: 0.65 }),
+            new THREE.CylinderGeometry(
+              selected === sq ? 0.33 : 0.2,
+              selected === sq ? 0.33 : 0.2,
+              0.035,
+              24,
+            ),
+            new THREE.MeshStandardMaterial({
+              color: markerColor,
+              emissive: markerColor,
+              emissiveIntensity: 0.28,
+              roughness: 0.65,
+            }),
           );
           marker.position.set(x, 0.115, z);
           marker.userData.square = sq;
@@ -433,7 +615,9 @@ export function Battlefield3D({
         const unit = createUnit(piece.type as PieceKind, sideColor);
         unit.position.set(x, 0.12, z);
         unit.rotation.y = piece.color === "r" ? Math.PI : 0;
-        unit.scale.multiplyScalar(piece.type === "b" ? 0.82 : piece.type === "r" ? 0.86 : 0.8);
+        unit.scale.multiplyScalar(
+          piece.type === "b" ? 0.82 : piece.type === "r" ? 0.86 : 0.8,
+        );
         unit.userData.square = sq;
         unit.userData.label = pieceName(piece);
         unit.traverse((part) => {
@@ -450,14 +634,26 @@ export function Battlefield3D({
       const dz = tz - sz;
       const length = Math.hypot(dx, dz);
       const shaft = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.035, 0.035, Math.max(0.1, length - 0.3), 8),
-        new THREE.MeshStandardMaterial({ color: SELECT, emissive: SELECT, emissiveIntensity: 0.25 }),
+        new THREE.CylinderGeometry(
+          0.035,
+          0.035,
+          Math.max(0.1, length - 0.3),
+          8,
+        ),
+        new THREE.MeshStandardMaterial({
+          color: SELECT,
+          emissive: SELECT,
+          emissiveIntensity: 0.25,
+        }),
       );
       shaft.position.set((sx + tx) / 2, 0.2, (sz + tz) / 2);
       shaft.rotation.z = Math.PI / 2;
       shaft.rotation.y = -Math.atan2(dz, dx);
       root.add(shaft);
-      const head = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.28, 8), standardMaterial(SELECT, 0.5));
+      const head = new THREE.Mesh(
+        new THREE.ConeGeometry(0.13, 0.28, 8),
+        standardMaterial(SELECT, 0.5),
+      );
       head.position.set(tx, 0.2, tz);
       head.rotation.z = Math.PI / 2;
       head.rotation.y = -Math.atan2(dz, dx);
