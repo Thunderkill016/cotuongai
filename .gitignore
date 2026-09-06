@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+output/
+.playwright-cli/
+public/engine/
+# Reproducibly fetched Pikafish runtime cache (see vendor/PROVENANCE.json)
+vendor/pikafish/pikafish-engine.js
+vendor/pikafish/pikafish-engine.wasm
+vendor/pikafish/pikafish-9e20a9a44415.nnue
+vendor/pikafish/upstream-build.sh

@@ -1,0 +1,19 @@
+{
+  "pikafish": {
+    "repository": "https://github.com/billzi2016/Chinese-Chess-AI-Pro",
+    "commit": "00ac398c8867c22d638630f8752e7a5ad8f98aca",
+    "license": "GPL-3.0-only",
+    "files": {
+      "pikafish-9e20a9a44415.nnue": "3cd15292bf8c979884262f57fc723959fc0dea43b4d8d544f88db5ceb2479e24",
+      "pikafish-engine.wasm": "56159745c701f2a10c30cd1e585d04c03e90809dbf4d486eeeab94806e7aa120",
+      "upstream-build.sh": "9729460ff22a27d74686f4f8fd164283d0f026fc7a7508b8a3298e6bd0e85508",
+      "pikafish-engine.js": "2e663e85256fe6cbf83edee973e9e1c678b8e458b95c588c2c54451726d60c41"
+    }
+  },
+  "rules": {
+    "repository": "https://github.com/lengyanyu258/xiangqi.js",
+    "commit": "f9019ac2303d4b80ef0b82fd0515bfb55a80a62b",
+    "license": "BSD-2-Clause",
+    "modification": "ESM export appended; all upstream rules unchanged"
+  }
+}
