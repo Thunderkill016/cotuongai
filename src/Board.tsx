@@ -29,7 +29,11 @@ export function Board(props: BoardViewProps) {
           Bàn 2D
         </button>
       </div>
-      {view === "3d" ? <Battlefield3DEnhanced {...props} /> : <Board2D {...props} />}
+      {view === "3d" ? (
+        <Battlefield3DEnhanced {...props} />
+      ) : (
+        <Board2D {...props} />
+      )}
     </div>
   );
 }

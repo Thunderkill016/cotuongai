@@ -76,7 +76,14 @@ export const KNOWLEDGE_SOURCES: KnowledgeSource[] = [
     language: "zh",
     era: "Minh, 1632",
     kind: ["ancient-manual", "opening", "endgame"],
-    themes: ["Pháo Đầu", "Thuận Pháo", "Nghịch Pháo", "công sát", "thí quân", "thực dụng tàn cục"],
+    themes: [
+      "Pháo Đầu",
+      "Thuận Pháo",
+      "Nghịch Pháo",
+      "công sát",
+      "thí quân",
+      "thực dụng tàn cục",
+    ],
     rights: "public-domain-scan",
     status: "primary",
     url: "https://commons.wikimedia.org/wiki/File:SSID-13711492_%E6%A9%98%E4%B8%AD%E7%A7%98%E8%B1%A1%E6%A3%8B%E8%AD%9C.pdf",
@@ -162,7 +169,13 @@ export const KNOWLEDGE_SOURCES: KnowledgeSource[] = [
     language: "zh",
     era: "Thanh, 1801",
     kind: ["ancient-manual", "endgame", "composition"],
-    themes: ["giang hồ bài cuộc", "Thất Tinh Tụ Hội", "Dã Mã Thao Điền", "Khâu Dẫn Hàng Long", "Thiên Lý Độc Hành"],
+    themes: [
+      "giang hồ bài cuộc",
+      "Thất Tinh Tụ Hội",
+      "Dã Mã Thao Điền",
+      "Khâu Dẫn Hàng Long",
+      "Thiên Lý Độc Hành",
+    ],
     rights: "public-domain",
     status: "primary",
     note: "Một nguồn quan trọng của hệ giang hồ tàn cục; các bản hiện đại có thể sửa lời giải nên phải lưu variant ID.",
@@ -198,7 +211,13 @@ export const KNOWLEDGE_SOURCES: KnowledgeSource[] = [
     chineseTitle: "象棋谱大全",
     language: "zh",
     era: "Dân quốc / tuyển tập cổ phổ",
-    kind: ["game-collection", "ancient-manual", "opening", "endgame", "composition"],
+    kind: [
+      "game-collection",
+      "ancient-manual",
+      "opening",
+      "endgame",
+      "composition",
+    ],
     themes: ["tổng tập", "dị bản", "mục lục cổ phổ"],
     rights: "public-domain-scan",
     status: "derivative",
@@ -235,7 +254,15 @@ export const KNOWLEDGE_SOURCES: KnowledgeSource[] = [
     language: "vi",
     era: "hiện đại",
     kind: ["rules", "opening", "middlegame", "endgame"],
-    themes: ["ăn quân", "chân Mã", "ngòi Pháo", "ra Xe", "tranh tiên", "công sát", "Sĩ Tượng"],
+    themes: [
+      "ăn quân",
+      "chân Mã",
+      "ngòi Pháo",
+      "ra Xe",
+      "tranh tiên",
+      "công sát",
+      "Sĩ Tượng",
+    ],
     rights: "reference-only",
     status: "index",
     note: "Tổng hợp cách dùng từ từ luật Việt Nam, kỳ đàn/diễn đàn và sách Việt; không xem một blog đơn lẻ là chuẩn thuật ngữ.",
@@ -257,7 +284,8 @@ export function knowledgeCoverage() {
   const byKind = new Map<KnowledgeKind, number>();
   const byRights = new Map<KnowledgeRights, number>();
   for (const source of KNOWLEDGE_SOURCES) {
-    for (const kind of source.kind) byKind.set(kind, (byKind.get(kind) || 0) + 1);
+    for (const kind of source.kind)
+      byKind.set(kind, (byKind.get(kind) || 0) + 1);
     byRights.set(source.rights, (byRights.get(source.rights) || 0) + 1);
   }
   return { byKind, byRights, total: KNOWLEDGE_SOURCES.length };
