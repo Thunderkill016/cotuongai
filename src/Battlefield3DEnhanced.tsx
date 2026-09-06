@@ -363,6 +363,7 @@ export function Battlefield3DEnhanced({
   destinations,
   arrow,
   lastMove,
+  moveEffect,
   onSquare,
   disabled,
   flipped,
@@ -492,6 +493,24 @@ export function Battlefield3DEnhanced({
             ring.scale.setScalar(0.7 + age * 1.8);
             const mat = ring.material as THREE.MeshBasicMaterial;
             mat.opacity = 0.7 * (1 - age);
+          } else object.visible = false;
+        }
+        if (object.userData.fade) {
+          const duration = object.userData.duration || 520;
+          const age = (now - object.userData.startedAt) / duration;
+          const faded = object as THREE.Mesh;
+          const mat = faded.material as THREE.MeshBasicMaterial;
+          if (age <= 1) mat.opacity = Math.max(0, 0.9 * (1 - age));
+          else object.visible = false;
+        }
+        if (object.userData.checkFlash) {
+          const age = (now - object.userData.startedAt) / 1250;
+          const ring = object as THREE.Mesh;
+          const mat = ring.material as THREE.MeshBasicMaterial;
+          if (age <= 1) {
+            const beat = 1 + Math.sin(age * Math.PI * 5) * 0.18;
+            ring.scale.setScalar(beat);
+            mat.opacity = Math.max(0.18, 0.9 * (1 - age * 0.72));
           } else object.visible = false;
         }
         if (object.userData.flag)
@@ -706,6 +725,92 @@ export function Battlefield3DEnhanced({
       root.add(flash);
     }
 
+    if (animateThisMove && lastMove && moveEffect) {
+      const effectStartedAt = performance.now();
+      const [tx, tz] = squareToWorld(moveEffect.to, flipped);
+
+      if (moveEffect.capture) {
+        const impact = new THREE.Mesh(
+          new THREE.RingGeometry(0.18, 0.42, 32),
+          new THREE.MeshBasicMaterial({
+            color: moveEffect.kind === "cannon-shot" ? "#e8b35f" : "#bd5747",
+            transparent: true,
+            opacity: 0.82,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          }),
+        );
+        impact.rotation.x = -Math.PI / 2;
+        impact.position.set(tx, 0.2, tz);
+        impact.userData.flash = true;
+        impact.userData.startedAt = effectStartedAt;
+        root.add(impact);
+      }
+
+      if (moveEffect.kind === "cannon-shot") {
+        const [sx, sz] = squareToWorld(moveEffect.from, flipped);
+        const dx = tx - sx;
+        const dz = tz - sz;
+        const length = Math.hypot(dx, dz);
+        const tracer = mesh(
+          new THREE.BoxGeometry(0.07, 0.07, Math.max(0.12, length)),
+          new THREE.MeshBasicMaterial({
+            color: "#ffd88a",
+            transparent: true,
+            opacity: 0.92,
+            depthWrite: false,
+          }),
+          [(sx + tx) / 2, 0.62, (sz + tz) / 2],
+        );
+        tracer.rotation.y = Math.atan2(dx, dz);
+        tracer.userData.fade = true;
+        tracer.userData.startedAt = effectStartedAt;
+        tracer.userData.duration = 470;
+        root.add(tracer);
+
+        if (moveEffect.cannonScreenSquare) {
+          const [gx, gz] = squareToWorld(
+            moveEffect.cannonScreenSquare,
+            flipped,
+          );
+          const screen = new THREE.Mesh(
+            new THREE.RingGeometry(0.28, 0.38, 28),
+            new THREE.MeshBasicMaterial({
+              color: COLORS.select,
+              transparent: true,
+              opacity: 0.78,
+              side: THREE.DoubleSide,
+              depthWrite: false,
+            }),
+          );
+          screen.rotation.x = -Math.PI / 2;
+          screen.position.set(gx, 0.18, gz);
+          screen.userData.flash = true;
+          screen.userData.startedAt = effectStartedAt;
+          root.add(screen);
+        }
+      }
+
+      if (moveEffect.givesCheck && moveEffect.checkedKingSquare) {
+        const [kx, kz] = squareToWorld(moveEffect.checkedKingSquare, flipped);
+        const check = new THREE.Mesh(
+          new THREE.RingGeometry(0.42, 0.58, 36),
+          new THREE.MeshBasicMaterial({
+            color: "#c84035",
+            transparent: true,
+            opacity: 0.9,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+          }),
+        );
+        check.rotation.x = -Math.PI / 2;
+        check.position.set(kx, 0.19, kz);
+        check.userData.checkFlash = true;
+        check.userData.startedAt = effectStartedAt;
+        root.add(check);
+      }
+    }
+
     if (arrow && /^[a-i][0-9][a-i][0-9]$/.test(arrow)) {
       const [sx, sz] = squareToWorld(arrow.slice(0, 2), flipped);
       const [tx, tz] = squareToWorld(arrow.slice(2), flipped);
@@ -740,7 +845,16 @@ export function Battlefield3DEnhanced({
     }
 
     renderer.render(scene, camera);
-  }, [fen, selected, destinations, arrow, lastMove, flipped, tutorialSquares]);
+  }, [
+    fen,
+    selected,
+    destinations,
+    arrow,
+    lastMove,
+    moveEffect,
+    flipped,
+    tutorialSquares,
+  ]);
 
   return (
     <div className="battlefield3d-shell battlefield3d-enhanced">
@@ -753,7 +867,13 @@ export function Battlefield3DEnhanced({
       <div className="battlefield3d-hud" aria-hidden="true">
         <span>Sa bàn chiến trận 3D</span>
         <span>
-          Nước đi có chuyển động · Kéo: xoay · Cuộn: zoom · Chạm: ra lệnh
+          {moveEffect?.givesCheck
+            ? "Chiếu Tướng · vùng Tướng bị uy hiếp đang được đánh dấu"
+            : moveEffect?.kind === "cannon-shot"
+              ? "Pháo khai hỏa · vòng sáng chỉ quân làm ngòi"
+              : moveEffect?.capture
+                ? "Nước ăn quân · điểm va chạm đang được đánh dấu"
+                : "Nước đi có chuyển động · Kéo: xoay · Cuộn: zoom · Chạm: ra lệnh"}
         </span>
       </div>
     </div>

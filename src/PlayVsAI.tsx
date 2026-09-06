@@ -13,6 +13,7 @@ import {
   Swords,
 } from "lucide-react";
 import { Board } from "./Board";
+import { deriveBattleCue } from "./battleCue";
 import { START_FEN, position } from "./chess";
 import { EngineClient } from "./engine";
 import {
@@ -59,6 +60,13 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   const reviewMoves = reviewPly === null ? moves : moves.slice(0, reviewPly);
   const displayFen = fenAfter(reviewMoves);
   const displayedLastMove = reviewMoves.at(-1) ?? null;
+  const displayedMoveEffect = useMemo(() => {
+    if (!displayedLastMove) return null;
+    return deriveBattleCue(
+      fenAfter(reviewMoves.slice(0, -1)),
+      displayedLastMove,
+    );
+  }, [displayedLastMove, reviewPly, moves]);
   const destinations =
     reviewPly === null && selected && humanCanMove
       ? liveGame.moves({ square: selected }).map((move) => move.slice(2))
@@ -288,6 +296,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
               destinations={destinations}
               arrow={null}
               lastMove={displayedLastMove}
+              moveEffect={displayedMoveEffect}
               onSquare={clickSquare}
               disabled={
                 reviewPly !== null ||
