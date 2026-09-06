@@ -1,0 +1,124 @@
+.board-view-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.board-view-switch {
+  display: inline-flex;
+  justify-self: end;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #d9d8cf;
+  border-radius: 9px;
+  background: #eeeee7;
+}
+
+.board-view-switch button {
+  min-height: 36px;
+  padding: 7px 11px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #6b746c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.board-view-switch button.active {
+  background: #fffef9;
+  color: #274c40;
+  box-shadow: 0 1px 4px #29362d16;
+}
+
+.battlefield3d-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #8c704e;
+  border-radius: 12px;
+  background: #b58d57;
+  box-shadow:
+    0 20px 34px -20px #45301f80,
+    inset 0 0 0 2px #ead6ad35;
+}
+
+.battlefield3d-canvas {
+  width: 100%;
+  min-height: 510px;
+  background: #d8cfbc;
+  touch-action: pan-y;
+}
+
+.battlefield3d-canvas canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: grab;
+}
+
+.battlefield3d-canvas canvas:active {
+  cursor: grabbing;
+}
+
+.battlefield3d-hud {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 11px;
+  border: 1px solid #ffffff26;
+  border-radius: 8px;
+  background: #20312bd9;
+  color: #f6f0df;
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.battlefield3d-hud span:first-child {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.battlefield3d-hud span:last-child {
+  color: #d9dfd8;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .board-view-switch {
+    justify-self: stretch;
+  }
+
+  .board-view-switch button {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .battlefield3d-canvas {
+    min-height: 430px;
+  }
+
+  .battlefield3d-hud {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .battlefield3d-hud span:last-child {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battlefield3d-shell,
+  .battlefield3d-canvas,
+  .battlefield3d-canvas canvas {
+    scroll-behavior: auto;
+  }
+}
