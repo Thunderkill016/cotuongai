@@ -1,0 +1,53 @@
+name: Build beginner onboarding v2
+on:
+  push:
+    branches: ["feat/onboarding-zero-v2"]
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch onboarding
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/App.tsx'); s=p.read_text()
+          anchor='  const [dialog, setDialog] = useState<"progress" | "help" | null>(null);\n'
+          assert anchor in s
+          s=s.replace(anchor, anchor+'  const [showStarterGuide, setShowStarterGuide] = useState(() => {\n    try { return localStorage.getItem("ky-lo.onboarding.v1") !== "done"; }\n    catch { return true; }\n  });\n',1)
+          anchor='  const skillSummaries = summarizeSkills(attempts);\n'
+          guide='''  const skillSummaries = summarizeSkills(attempts);\n  const starterGuide = showStarterGuide && mode === "training" && exerciseIndex === 0\n    ? played\n      ? { step: 3, title: "Bạn vừa đi nước đầu tiên.", text: "Xe đỏ đã bắt Mã. Bây giờ hãy nhìn xem Đen có thể bắt lại Xe ngay hay không.", squares: ["b3"] }\n      : candidate === "b0b3"\n        ? { step: 3, title: "Xác nhận nước bạn vừa chọn.", text: "Bạn đã chọn Xe b0 → b3 để bắt Mã. Bấm ‘Thử nước này’ ở bảng bên phải.", squares: ["b0", "b3"] }\n        : selected === "b0"\n          ? { step: 2, title: "Bấm quân Mã đen để bắt.", text: "Các điểm được đánh dấu là nơi Xe có thể đi. Bấm quân Mã 馬 ở b3.", squares: ["b0", "b3"] }\n          : { step: 1, title: "Bạn cầm quân ĐỎ.", text: "Bước đầu tiên: bấm quân Xe 車 ở góc dưới bên trái. Xe đi theo đường thẳng.", squares: ["b0"] }\n    : null;\n  function dismissStarterGuide() {\n    setShowStarterGuide(false);\n    try { localStorage.setItem("ky-lo.onboarding.v1", "done"); } catch {}\n  }\n'''
+          assert anchor in s; s=s.replace(anchor,guide,1)
+          old='                      : `${currentSide} đi trước khi mở đáp án`}\n'
+          new='                      : mode === "training"\n                        ? `Bạn cầm ${currentSide} • ${currentSide} đi`\n                        : `${currentSide} tới lượt`}\n'
+          assert old in s; s=s.replace(old,new,1)
+          old='          <section className="board-section" aria-label="Khu vực bàn cờ">\n            <div className="board-topline">\n'
+          new='''          <section className="board-section" aria-label="Khu vực bàn cờ">\n            {starterGuide && (\n              <aside className="starter-guide" aria-live="polite">\n                <div className="starter-step">BẮT ĐẦU · {starterGuide.step}/3</div>\n                <div><strong>{starterGuide.title}</strong><p>{starterGuide.text}</p></div>\n                <button type="button" onClick={dismissStarterGuide}>{played ? "Đã hiểu" : "Ẩn hướng dẫn"}</button>\n              </aside>\n            )}\n            <div className="board-topline">\n'''
+          assert old in s; s=s.replace(old,new,1)
+          old='              flipped={flipped}\n            />\n'; new='              flipped={flipped}\n              tutorialSquares={starterGuide?.squares}\n            />\n'
+          assert old in s; s=s.replace(old,new,1); p.write_text(s)
+          p=Path('src/Board.tsx'); b=p.read_text()
+          assert '  flipped: boolean;\n}\n' in b; b=b.replace('  flipped: boolean;\n}\n','  flipped: boolean;\n  tutorialSquares?: string[];\n}\n',1)
+          assert '  disabled,\n  flipped,\n}: Props) {\n' in b; b=b.replace('  disabled,\n  flipped,\n}: Props) {\n','  disabled,\n  flipped,\n  tutorialSquares = [],\n}: Props) {\n',1)
+          old='className={`square ${selected === sq ? "selected" : ""} ${destination ? "destination" : ""} ${recent ? "recent" : ""}`}\n'
+          new='className={`square ${selected === sq ? "selected" : ""} ${destination ? "destination" : ""} ${recent ? "recent" : ""} ${tutorialSquares.includes(sq) ? "tutorial-focus" : ""}`}\n'
+          assert old in b; b=b.replace(old,new,1); p.write_text(b)
+          p=Path('src/style.css'); css=p.read_text()+'''\n.starter-guide{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;margin-bottom:14px;padding:14px 16px;border:1px solid #b7c5b8;border-radius:12px;background:#f7f3e8;box-shadow:0 8px 24px rgb(56 45 25 / 7%)}\n.starter-guide strong{display:block;color:#173f35;font-size:1rem}.starter-guide p{margin:4px 0 0;line-height:1.5;color:#5d604f}.starter-guide button{border:0;background:transparent;color:#536b5c;text-decoration:underline;cursor:pointer}.starter-step{padding:7px 9px;border-radius:8px;background:#214f42;color:#fff;font-size:.72rem;font-weight:700;letter-spacing:.08em;white-space:nowrap}.square.tutorial-focus::after{content:"";position:absolute;inset:-7px;border:3px solid #d46d2f;border-radius:50%;box-shadow:0 0 0 6px rgb(212 109 47 / 16%);pointer-events:none;animation:tutorialPulse 1.4s ease-in-out infinite}@keyframes tutorialPulse{50%{transform:scale(1.08);opacity:.72}}@media(max-width:720px){.starter-guide{grid-template-columns:auto 1fr;align-items:start}.starter-guide button{grid-column:2;justify-self:start;padding:0}}@media(prefers-reduced-motion:reduce){.square.tutorial-focus::after{animation:none}}\n'''; p.write_text(css)
+          PY
+      - name: Format and verify
+        run: |
+          npm ci
+          npm run format
+          npm run quality
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx src/Board.tsx src/style.css
+          git commit -m "feat: guide beginners through their first Xiangqi move"
+          git push origin HEAD:feat/onboarding-zero-v2
