@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { FILES, GLYPHS, pieceName, position, squareAt } from "./chess";
+import type { BattleCue } from "./battleCue";
 
 export interface BoardViewProps {
   fen: string;
@@ -7,6 +8,7 @@ export interface BoardViewProps {
   destinations: string[];
   arrow?: string | null;
   lastMove?: string | null;
+  moveEffect?: BattleCue | null;
   onSquare: (sq: string) => void;
   disabled?: boolean;
   flipped: boolean;

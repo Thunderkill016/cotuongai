@@ -66,7 +66,9 @@ export function deriveBattleCue(beforeFen: string, move: string): BattleCue {
 
   let cannonScreenSquare: string | null = null;
   if (mover.type === "c" && target) {
-    const screens = squaresBetween(from, to).filter((square) => game.get(square));
+    const screens = squaresBetween(from, to).filter((square) =>
+      game.get(square),
+    );
     if (screens.length === 1) cannonScreenSquare = screens[0];
   }
 

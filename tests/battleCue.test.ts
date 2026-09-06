@@ -25,10 +25,7 @@ describe("deterministic 3D battle cues", () => {
   });
 
   it("derives check and the threatened general square after the legal move", () => {
-    const cue = deriveBattleCue(
-      "4k4/9/9/9/9/9/9/9/9/R4K3 r - - 0 1",
-      "a0e0",
-    );
+    const cue = deriveBattleCue("4k4/9/9/9/9/9/9/9/9/R4K3 r - - 0 1", "a0e0");
     expect(cue.givesCheck).toBe(true);
     expect(cue.checkedKingSquare).toBe("e9");
   });
