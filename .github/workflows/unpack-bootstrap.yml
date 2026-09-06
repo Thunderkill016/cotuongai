@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".bootstrap/cotuongai-m2.zip"
-      - ".github/workflows/unpack-bootstrap.yml"
+      - ".bootstrap/recovery-ready"
   workflow_dispatch:
 
 permissions:
@@ -19,16 +18,28 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4
 
-      - name: Verify and unpack recovery archive
+      - name: Reconstruct and unpack verified recovery archive
         shell: bash
         run: |
           set -euo pipefail
-          archive=.bootstrap/cotuongai-m2.zip
-          test -f "$archive"
-          unzip -t "$archive"
+          test -f .bootstrap/recovery-ready
+          cat .bootstrap/recovery_chunk_00 \
+              .bootstrap/recovery_chunk_01 \
+              .bootstrap/recovery_chunk_02 \
+              .bootstrap/recovery_chunk_03 \
+              .bootstrap/recovery_chunk_04 \
+              .bootstrap/recovery_chunk_05 \
+              .bootstrap/recovery_chunk_06 \
+              .bootstrap/recovery_chunk_07 \
+              .bootstrap/recovery_chunk_08 > /tmp/cotuongai-m2.b64
+          test "$(wc -c < /tmp/cotuongai-m2.b64)" -eq 136984
+          printf '%s  %s\n' '50a33042ae82363a85a4c8b0d41fa7cdc1d56f303295ca4734f24f2cd079aacd' '/tmp/cotuongai-m2.b64' | sha256sum -c -
+          base64 --decode /tmp/cotuongai-m2.b64 > /tmp/cotuongai-m2.zip
+          printf '%s  %s\n' 'c5c39cb418ce750f0627c4f815e4cb3c4487651cbea4205d8af13c2baf6c3f67' '/tmp/cotuongai-m2.zip' | sha256sum -c -
+          unzip -t /tmp/cotuongai-m2.zip
           rm -rf /tmp/cotuong-recovery
           mkdir -p /tmp/cotuong-recovery
-          unzip -q "$archive" -d /tmp/cotuong-recovery
+          unzip -q /tmp/cotuongai-m2.zip -d /tmp/cotuong-recovery
           root=/tmp/cotuong-recovery/cotuongai-m2
           test -f "$root/package.json"
           test -f "$root/package-lock.json"
