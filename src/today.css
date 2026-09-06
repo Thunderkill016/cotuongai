@@ -28,7 +28,10 @@
 }
 
 .today-stats strong {
-  font: 28px "Playfair Display", Georgia, serif;
+  font:
+    28px "Playfair Display",
+    Georgia,
+    serif;
   color: var(--green);
 }
 

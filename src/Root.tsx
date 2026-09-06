@@ -52,8 +52,7 @@ export default function Root() {
     setRoute("coach");
   }
 
-  if (route === "play")
-    return <PlayVsAI onExit={closeRoute} />;
+  if (route === "play") return <PlayVsAI onExit={closeRoute} />;
   if (route === "today")
     return <TodayPractice onExit={closeRoute} onPlay={() => open("play")} />;
 

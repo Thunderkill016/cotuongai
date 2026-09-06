@@ -65,7 +65,9 @@ function fingerprintFor(moment: ReviewMoment): string {
   ].join("|");
 }
 
-function moverTag(type: ReviewMoment["candidate"]["cue"]["mover"]): PracticeTag {
+function moverTag(
+  type: ReviewMoment["candidate"]["cue"]["mover"],
+): PracticeTag {
   switch (type) {
     case "c":
       return "cannon";
@@ -164,7 +166,9 @@ export function ingestReviewMoment(
   at: number = Date.now(),
 ): GamePracticeCard[] {
   const incoming = freshCard(moment, at);
-  const existing = cards.find((card) => card.fingerprint === incoming.fingerprint);
+  const existing = cards.find(
+    (card) => card.fingerprint === incoming.fingerprint,
+  );
   const base = existing
     ? {
         ...existing,
@@ -183,7 +187,9 @@ export function ingestReviewMoment(
       }
     : incoming;
   const attempted = recordPracticeAttempt(base, retryMove, at);
-  const merged = cards.filter((card) => card.fingerprint !== incoming.fingerprint);
+  const merged = cards.filter(
+    (card) => card.fingerprint !== incoming.fingerprint,
+  );
   return [...merged, attempted]
     .sort((a, b) => a.updatedAt - b.updatedAt)
     .slice(-MAX_GAME_PRACTICE_CARDS);
@@ -216,7 +222,9 @@ export function buildTodayPracticeQueue(
       if (aDue !== bDue) return aDue ? -1 : 1;
       if (aDue && severity(a.reviewKind) !== severity(b.reviewKind))
         return severity(b.reviewKind) - severity(a.reviewKind);
-      return a.dueAt - b.dueAt || severity(b.reviewKind) - severity(a.reviewKind);
+      return (
+        a.dueAt - b.dueAt || severity(b.reviewKind) - severity(a.reviewKind)
+      );
     })
     .slice(0, limit);
 }

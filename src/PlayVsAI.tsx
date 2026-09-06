@@ -35,6 +35,11 @@ import {
   type ReviewEvidence,
   type ReviewMoment,
 } from "./gameReview";
+import {
+  GAME_PRACTICE_STORAGE_KEY,
+  ingestReviewMoment,
+  parsePracticeCards,
+} from "./practiceMemory";
 import "./play.css";
 
 interface PlayVsAIProps {
@@ -362,6 +367,27 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
       );
       setReviewStatus("error");
     }
+  }
+
+  function revealReviewAnswer() {
+    if (!activeReview || !reviewGuess) return;
+    try {
+      const stored = parsePracticeCards(
+        localStorage.getItem(GAME_PRACTICE_STORAGE_KEY),
+      );
+      const next = ingestReviewMoment(
+        stored,
+        activeReview,
+        reviewGuess,
+        Date.now(),
+      );
+      localStorage.setItem(GAME_PRACTICE_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      setMessage(
+        "Đã mở đáp án nhưng trình duyệt không lưu được thế này vào lịch ôn.",
+      );
+    }
+    setReviewRevealed(true);
   }
 
   function nextReviewMoment() {
@@ -699,7 +725,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                         <button
                           className="primary-button"
                           disabled={!reviewGuess}
-                          onClick={() => setReviewRevealed(true)}
+                          onClick={revealReviewAnswer}
                         >
                           <ShieldCheck size={16} /> Chốt nước tôi chọn
                         </button>

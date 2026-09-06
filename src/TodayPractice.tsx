@@ -60,10 +60,13 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
   const [storageWarning, setStorageWarning] = useState("");
   const now = Date.now();
 
-  const queue = useMemo(() => buildTodayPracticeQueue(cards, now, 8), [cards, now]);
+  const queue = useMemo(
+    () => buildTodayPracticeQueue(cards, now, 8),
+    [cards, now],
+  );
   const active = activeId
-    ? cards.find((card) => card.id === activeId) ?? null
-    : queue[0] ?? null;
+    ? (cards.find((card) => card.id === activeId) ?? null)
+    : (queue[0] ?? null);
   const dueCount = duePracticeCount(cards, now);
   const game = useMemo(() => {
     if (!active) return null;
@@ -78,9 +81,13 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
       ? game.moves({ square: selected }).map((move) => move.slice(2))
       : [];
   const displayFen =
-    active && revealed ? replay(active.rootFen, [active.bestmove]) : active?.rootFen;
+    active && revealed
+      ? replay(active.rootFen, [active.bestmove])
+      : active?.rootFen;
   const moveEffect =
-    active && revealed ? deriveBattleCue(active.rootFen, active.bestmove) : null;
+    active && revealed
+      ? deriveBattleCue(active.rootFen, active.bestmove)
+      : null;
 
   useEffect(() => {
     if (!activeId && queue[0]) {
@@ -182,8 +189,8 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
             <div className="eyebrow">ÔN TỪ CHÍNH VÁN CỦA BẠN</div>
             <h1>Không học lỗi chung chung. Ôn lại đúng thế đã gặp.</h1>
             <p>
-              Các thế ở đây chỉ xuất hiện sau khi ván thật đã được Pikafish
-              phân tích và bạn đã tự tính lại trước khi xem đáp án.
+              Các thế ở đây chỉ xuất hiện sau khi ván thật đã được Pikafish phân
+              tích và bạn đã tự tính lại trước khi xem đáp án.
             </p>
           </div>
           <div className="today-stats" aria-label="Tình trạng ôn tập">
@@ -213,7 +220,10 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
           </section>
         ) : (
           <div className="workspace today-workspace">
-            <section className="board-section" aria-label="Thế cờ cần ôn hôm nay">
+            <section
+              className="board-section"
+              aria-label="Thế cờ cần ôn hôm nay"
+            >
               <div className="board-topline">
                 <span className="side-label">
                   <CalendarClock size={15} /> {dueLabel(active.dueAt, now)}
@@ -271,9 +281,10 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                 </div>
                 {active.lossCp !== null && (
                   <p className="muted">
-                    Chênh đánh giá engine lúc review: {(active.lossCp / 100).toFixed(2)}.
-                    Đây là evidence của Pikafish ở ngân sách tìm kiếm đã lưu,
-                    không phải điểm Elo hay kết luận trình độ.
+                    Chênh đánh giá engine lúc review:{" "}
+                    {(active.lossCp / 100).toFixed(2)}. Đây là evidence của
+                    Pikafish ở ngân sách tìm kiếm đã lưu, không phải điểm Elo
+                    hay kết luận trình độ.
                   </p>
                 )}
               </section>
@@ -285,13 +296,21 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                     Tìm nước chiếu, nước ăn quân và nước đối thủ có thể đáp.
                     Đừng cố nhớ tọa độ từ lần review trước.
                   </p>
-                  <button className="primary-button" disabled={!guess} onClick={commit}>
+                  <button
+                    className="primary-button"
+                    disabled={!guess}
+                    onClick={commit}
+                  >
                     <CheckCircle2 size={16} /> Chốt nước tôi chọn
                   </button>
                 </section>
               ) : (
                 <section className="today-result" aria-live="polite">
-                  <div className={guess === active.bestmove ? "is-correct" : "is-missed"}>
+                  <div
+                    className={
+                      guess === active.bestmove ? "is-correct" : "is-missed"
+                    }
+                  >
                     {guess === active.bestmove
                       ? "Lần này bạn tìm đúng nước Pikafish đã lưu."
                       : "Lần này nước bạn chọn vẫn khác nước Pikafish đã lưu."}
@@ -311,7 +330,8 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                     </div>
                   </dl>
                   <p className="review-pv">
-                    Biến đã lưu: {active.bestLine.slice(0, 5).map(moveLabel).join(" · ")}
+                    Biến đã lưu:{" "}
+                    {active.bestLine.slice(0, 5).map(moveLabel).join(" · ")}
                   </p>
                   <p className="today-provenance">
                     {active.engineBuild} · {active.engineBudgetMs} ms
@@ -330,7 +350,9 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                   đã được hiệu chuẩn khoa học riêng cho cờ tướng.
                 </p>
               </section>
-              {storageWarning && <p className="analysis-note">{storageWarning}</p>}
+              {storageWarning && (
+                <p className="analysis-note">{storageWarning}</p>
+              )}
             </aside>
           </div>
         )}
