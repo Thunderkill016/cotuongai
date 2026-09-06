@@ -1,0 +1,83 @@
+name: Build beginner onboarding
+
+on:
+  push:
+    branches: ["feat/onboarding-zero-v2"]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Add zero-to-first-move onboarding
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('src/App.tsx')
+          s = app.read_text()
+
+          old = '  const [dialog, setDialog] = useState<"progress" | "help" | null>(null);\n'
+          new = old + '''  const [showStarterGuide, setShowStarterGuide] = useState(() => {\n    try {\n      return localStorage.getItem("ky-lo.onboarding.v1") !== "done";\n    } catch {\n      return true;\n    }\n  });\n'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '  const skillSummaries = summarizeSkills(attempts);\n'
+          new = '''  const skillSummaries = summarizeSkills(attempts);\n  const starterGuide =\n    showStarterGuide && mode === "training" && exerciseIndex === 0\n      ? played\n        ? {\n            step: 3,\n            title: "Bạn vừa đi nước đầu tiên.",\n            text: "Xe đỏ đã bắt Mã. Bây giờ mục tiêu là nhìn xem Đen có thể bắt lại Xe ngay hay không.",\n            squares: ["b3"],\n          }\n        : candidate === "b0b3"\n          ? {\n              step: 3,\n              title: "Xác nhận nước bạn vừa chọn.",\n              text: "Bạn đã chọn Xe b0 → b3 để bắt Mã. Bấm ‘Thử nước này’ ở bảng bên phải để đi nước.",\n              squares: ["b0", "b3"],\n            }\n          : selected === "b0"\n            ? {\n                step: 2,\n                title: "Bấm quân Mã đen để bắt.",\n                text: "Các điểm được đánh dấu là nơi Xe có thể đi. Bấm quân Mã 馬 ở b3.",\n                squares: ["b0", "b3"],\n              }\n            : selected\n              ? {\n                  step: 1,\n                  title: "Hãy bắt đầu bằng Xe đỏ.",\n                  text: "Bạn đang cầm quân Đỏ. Bấm quân Xe 車 ở góc dưới bên trái của bàn cờ.",\n                  squares: ["b0"],\n                }\n              : {\n                  step: 1,\n                  title: "Bạn cầm quân ĐỎ.",\n                  text: "Bước đầu tiên: bấm quân Xe 車 ở góc dưới bên trái. Xe đi theo đường thẳng.",\n                  squares: ["b0"],\n                }\n      : null;\n\n  function dismissStarterGuide() {\n    setShowStarterGuide(false);\n    try {\n      localStorage.setItem("ky-lo.onboarding.v1", "done");\n    } catch {\n      /* Onboarding still closes for this session if storage is unavailable. */\n    }\n  }\n'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '''                      : `${currentSide} đi trước khi mở đáp án`}\n'''
+          new = '''                      : mode === "training"\n                        ? `Bạn cầm ${currentSide} • ${currentSide} đi`\n                        : `${currentSide} tới lượt`}\n'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '''          <section className="board-section" aria-label="Khu vực bàn cờ">\n            <div className="board-topline">\n'''
+          new = '''          <section className="board-section" aria-label="Khu vực bàn cờ">\n            {starterGuide && (\n              <aside className="starter-guide" aria-live="polite">\n                <div className="starter-step">BẮT ĐẦU · {starterGuide.step}/3</div>\n                <div>\n                  <strong>{starterGuide.title}</strong>\n                  <p>{starterGuide.text}</p>\n                </div>\n                <button type="button" onClick={dismissStarterGuide}>\n                  {played ? "Đã hiểu" : "Ẩn hướng dẫn"}\n                </button>\n              </aside>\n            )}\n            <div className="board-topline">\n'''
+          assert old in s
+          s = s.replace(old, new, 1)
+
+          old = '''              flipped={flipped}\n            />\n'''
+          new = '''              flipped={flipped}\n              tutorialSquares={starterGuide?.squares}\n            />\n'''
+          assert old in s
+          s = s.replace(old, new, 1)
+          app.write_text(s)
+
+          board = Path('src/Board.tsx')
+          b = board.read_text()
+          old = '  flipped: boolean;\n}\n'
+          new = '  flipped: boolean;\n  tutorialSquares?: string[];\n}\n'
+          assert old in b
+          b = b.replace(old, new, 1)
+          old = '''  disabled,\n  flipped,\n}: Props) {\n'''
+          new = '''  disabled,\n  flipped,\n  tutorialSquares = [],\n}: Props) {\n'''
+          assert old in b
+          b = b.replace(old, new, 1)
+          old = '''className={`square ${selected === sq ? "selected" : ""} ${destination ? "destination" : ""} ${recent ? "recent" : ""}`}\n'''
+          new = '''className={`square ${selected === sq ? "selected" : ""} ${destination ? "destination" : ""} ${recent ? "recent" : ""} ${tutorialSquares.includes(sq) ? "tutorial-focus" : ""}`}\n'''
+          assert old in b
+          b = b.replace(old, new, 1)
+          board.write_text(b)
+
+          style = Path('src/style.css')
+          css = style.read_text()
+          css += '''\n\n/* First-use onboarding: keep the instruction physically attached to the board. */\n.starter-guide {\n  display: grid;\n  grid-template-columns: auto 1fr auto;\n  gap: 14px;\n  align-items: center;\n  margin-bottom: 14px;\n  padding: 14px 16px;\n  border: 1px solid color-mix(in srgb, var(--green, #234f42) 28%, transparent);\n  border-radius: 12px;\n  background: #f7f3e8;\n  box-shadow: 0 8px 24px rgb(56 45 25 / 7%);\n}\n.starter-guide strong { display: block; color: #173f35; font-size: 1rem; }\n.starter-guide p { margin: 4px 0 0; line-height: 1.5; color: #5d604f; }\n.starter-guide button { border: 0; background: transparent; color: #536b5c; text-decoration: underline; cursor: pointer; }\n.starter-step {\n  padding: 7px 9px;\n  border-radius: 8px;\n  background: #214f42;\n  color: white;\n  font-size: .72rem;\n  font-weight: 700;\n  letter-spacing: .08em;\n  white-space: nowrap;\n}\n.square.tutorial-focus::after {\n  content: "";\n  position: absolute;\n  inset: -7px;\n  border: 3px solid #d46d2f;\n  border-radius: 50%;\n  box-shadow: 0 0 0 6px rgb(212 109 47 / 16%);\n  pointer-events: none;\n  animation: tutorialPulse 1.4s ease-in-out infinite;\n}\n@keyframes tutorialPulse {\n  50% { transform: scale(1.08); opacity: .72; }\n}\n@media (max-width: 720px) {\n  .starter-guide { grid-template-columns: auto 1fr; align-items: start; }\n  .starter-guide button { grid-column: 2; justify-self: start; padding: 0; }\n}\n@media (prefers-reduced-motion: reduce) {\n  .square.tutorial-focus::after { animation: none; }\n}\n'''
+          style.write_text(css)
+          PY
+      - name: Verify onboarding tree
+        run: |
+          npm ci
+          npm run quality
+      - name: Commit onboarding implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx src/Board.tsx src/style.css
+          git commit -m "feat: guide beginners through their first Xiangqi move"
+          git push origin HEAD:feat/onboarding-zero-v2
