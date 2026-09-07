@@ -1,4 +1,5 @@
 import { START_FEN, position, replay, type Side } from "./chess";
+import { MAX_GAME_PLIES } from "./game";
 
 export type PlayerSide = Side;
 export type GamePhase = "playing" | "finished";
@@ -7,7 +8,8 @@ export type GameResult =
   | {
       kind: "draw";
       reason: "repetition" | "sixty-move" | "insufficient-material";
-    };
+    }
+  | { kind: "paused"; reason: "repetition" | "move-limit" };
 
 export interface GameSnapshot {
   fen: string;
@@ -48,7 +50,9 @@ export function currentSnapshot(
   } else if (game.in_threefold_repetition()) {
     // WXF long-check/long-chase adjudication is not implemented yet. Keep this
     // explicit so the product does not claim tournament-rule correctness here.
-    result = { kind: "draw", reason: "repetition" };
+    result = { kind: "paused", reason: "repetition" };
+  } else if (moves.length >= MAX_GAME_PLIES) {
+    result = { kind: "paused", reason: "move-limit" };
   } else if (game.insufficient_material()) {
     result = { kind: "draw", reason: "insufficient-material" };
   } else if (game.in_draw()) {
@@ -93,7 +97,8 @@ export function appendLegalMove(
   if (!/^[a-i][0-9][a-i][0-9]$/.test(move))
     throw new Error("Nước đi không đúng định dạng.");
   const game = position(startFen, moves);
-  if (game.game_over()) throw new Error("Ván cờ đã kết thúc.");
+  if (currentSnapshot(moves, startFen).phase === "finished")
+    throw new Error("Ván cờ đã kết thúc hoặc tạm dừng.");
   if (!game.move(move))
     throw new Error("Nước đi không hợp lệ trong thế hiện tại.");
   return [...moves, move];
@@ -121,6 +126,10 @@ export function moveListRows(moves: string[]) {
 
 export function resultLabel(result: GameResult | null): string {
   if (!result) return "";
+  if (result.kind === "paused")
+    return result.reason === "repetition"
+      ? "Tạm dừng vì lặp thế. Chưa phân xử trường chiếu/trường tróc; không tính là hòa."
+      : "Tạm dừng ở giới hạn 300 nước nửa lượt. Không tính là hòa.";
   if (result.kind !== "draw") {
     return result.kind === "checkmate"
       ? `${sideName(result.winner)} thắng — chiếu bí.`

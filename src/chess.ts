@@ -81,8 +81,58 @@ export function describeMove(fen: string, uci: string): string {
   // Upstream pretty moves uppercase Red piece codes; board pieces stay canonical.
   const piece = game.get(uci.slice(0, 2));
   const moved = game.move(uci);
-  if (!moved || !piece) return uci;
-  return `${PIECE_NAMES[piece.type]} ${moved.from} → ${moved.to}${moved.captured ? `, ăn ${PIECE_NAMES[moved.captured]}` : ""}`;
+  if (!moved || !piece) return "Nước đi không hợp lệ";
+  // Each side numbers files from its own right to left, independent of board flip.
+  const fileNumber = (sq: string) =>
+    piece.color === "r" ? 9 - FILES.indexOf(sq[0]) : FILES.indexOf(sq[0]) + 1;
+  const delta = Number(moved.to[1]) - Number(moved.from[1]);
+  const action =
+    delta === 0
+      ? "bình"
+      : delta * (piece.color === "r" ? 1 : -1) > 0
+        ? "tấn"
+        : "thoái";
+  const destination =
+    delta === 0 || ["n", "a", "b"].includes(piece.type)
+      ? fileNumber(moved.to)
+      : Math.abs(delta);
+  const peers = position(fen)
+    .board()
+    .flatMap((row, r) =>
+      row.flatMap((p, c) =>
+        p?.type === piece.type &&
+        p.color === piece.color &&
+        FILES[c] === moved.from[0]
+          ? [squareAt(r, c)]
+          : [],
+      ),
+    )
+    .sort((a, b) =>
+      piece.color === "r"
+        ? Number(b[1]) - Number(a[1])
+        : Number(a[1]) - Number(b[1]),
+    );
+  const order = peers.indexOf(moved.from);
+  const origin =
+    peers.length === 1
+      ? String(fileNumber(moved.from))
+      : peers.length === 2
+        ? order === 0
+          ? "trước"
+          : "sau"
+        : peers.length === 3
+          ? ["trước", "giữa", "sau"][order]
+          : `thứ ${order + 1} từ trước`;
+  return `${PIECE_NAMES[piece.type]} ${origin} ${action} ${destination}${moved.captured ? `, ăn ${PIECE_NAMES[moved.captured]}` : ""}`;
+}
+
+export function describeLine(fen: string, moves: string[]): string[] {
+  const game = position(fen);
+  return moves.map((move) => {
+    const text = describeMove(game.fen(), move);
+    if (!game.move(move)) throw new Error("Biến cờ chứa nước không hợp lệ.");
+    return text;
+  });
 }
 
 export function replay(fen: string, moves: string[]): string {

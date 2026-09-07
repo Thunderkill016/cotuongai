@@ -4,6 +4,8 @@ An independent Vietnamese Xiangqi trainer with full local games against Pikafish
 
 ## Full games (P0)
 
+The single game route is `#/play` (`PlayVsAI`), including post-game review and practice-card ingestion. The trainer's play button opens that same route. Move history and review lines use Vietnamese notation (for example `Pháo 2 bình 5`, `Mã 8 tấn 7`), numbered from the moving side's perspective. Browser persistence uses `ky-lo.game.v1` and retains saved games from the earlier P0 view.
+
 Choose Red or Black, then start a standard game. Pikafish automatically plays the opposite side. Practice allows undo to the previous human decision; challenge does not. Resign, replay individual moves, return to the live position, or reopen the browser's saved game. Opening setup preserves the saved game until a new game starts. Storage is validated local convenience data, not an authoritative match record.
 
 Checkmate and stalemate are losses. Repetition pauses without declaring a draw because full WXF check/chase adjudication is unsupported. The existing wrapper's 300-half-move limit also pauses without declaring a draw. Tournament draw adjudication, clocks and post-game coaching remain future work.

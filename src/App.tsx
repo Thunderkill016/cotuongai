@@ -45,7 +45,6 @@ import {
 } from "./training";
 import { requestCoaching } from "./coach";
 import { recommendNextPractice } from "./retrieval";
-import { FullGame } from "./FullGame";
 
 function loadHistory(): Attempt[] {
   try {
@@ -56,15 +55,6 @@ function loadHistory(): Attempt[] {
 }
 
 export default function App() {
-  const [playing, setPlaying] = useState(true);
-  return playing ? (
-    <FullGame onPractice={() => setPlaying(false)} />
-  ) : (
-    <PracticeApp onPlay={() => setPlaying(true)} />
-  );
-}
-
-function PracticeApp({ onPlay }: { onPlay: () => void }) {
   const [mode, setMode] = useState<"training" | "free">("training");
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [moves, setMoves] = useState<string[]>([]);
@@ -510,7 +500,13 @@ function PracticeApp({ onPlay }: { onPlay: () => void }) {
           </span>
         </a>
         <nav className="main-nav" aria-label="Chế độ">
-          <button onClick={onPlay}>Chơi với máy</button>
+          <button
+            onClick={() => {
+              window.location.hash = "/play";
+            }}
+          >
+            Chơi với máy
+          </button>
           <button
             className={mode === "training" ? "active" : ""}
             onClick={() => changeMode("training")}

@@ -70,7 +70,8 @@ describe("full-game session boundaries", () => {
       "g7h9",
     ];
     const snapshot = currentSnapshot(moves, START_FEN);
-    expect(snapshot.result).toEqual({ kind: "draw", reason: "repetition" });
+    expect(snapshot.result).toEqual({ kind: "paused", reason: "repetition" });
+    expect(() => appendLegalMove(moves, "h2e2")).toThrow();
     expect(resultLabel(snapshot.result)).toContain("trường chiếu/trường tróc");
   });
 });

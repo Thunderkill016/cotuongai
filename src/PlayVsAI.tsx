@@ -14,7 +14,13 @@ import {
 } from "lucide-react";
 import { Board } from "./Board";
 import { deriveBattleCue } from "./battleCue";
-import { START_FEN, position, replay } from "./chess";
+import {
+  START_FEN,
+  position,
+  replay,
+  describeMove,
+  describeLine,
+} from "./chess";
 import { EngineClient, scoreLabel } from "./engine";
 import {
   appendLegalMove,
@@ -41,20 +47,34 @@ import {
   parsePracticeCards,
 } from "./practiceMemory";
 import "./play.css";
+import {
+  createGame,
+  GAME_STORAGE_KEY,
+  parseLocalGame,
+  type GameMode,
+} from "./game";
 
 interface PlayVsAIProps {
   onExit: () => void;
 }
 
-function moveLabel(move: string | null) {
-  return move ? `${move.slice(0, 2)} → ${move.slice(2)}` : "—";
-}
-
 export function PlayVsAI({ onExit }: PlayVsAIProps) {
-  const [humanSide, setHumanSide] = useState<PlayerSide>("r");
-  const [moves, setMoves] = useState<string[]>([]);
+  const [initialGame] = useState(() => {
+    try {
+      return (
+        parseLocalGame(localStorage.getItem(GAME_STORAGE_KEY)) ?? createGame()
+      );
+    } catch {
+      return createGame();
+    }
+  });
+  const [humanSide, setHumanSide] = useState<PlayerSide>(initialGame.humanSide);
+  const [moves, setMoves] = useState<string[]>(initialGame.moves);
+  const [resigned, setResigned] = useState(initialGame.resigned);
+  const [gameMode, setGameMode] = useState<GameMode>(initialGame.mode);
+  const [storageWarning, setStorageWarning] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
-  const [flipped, setFlipped] = useState(false);
+  const [flipped, setFlipped] = useState(initialGame.humanSide === "b");
   const [aiThinking, setAiThinking] = useState(false);
   const [engineState, setEngineState] = useState<"loading" | "ready" | "error">(
     "loading",
@@ -78,7 +98,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
 
   const snapshot = useMemo(() => currentSnapshot(moves), [moves]);
   const liveGame = useMemo(() => position(START_FEN, moves), [moves]);
-  const humanCanMove = canHumanMove(moves, humanSide, aiThinking);
+  const humanCanMove = !resigned && canHumanMove(moves, humanSide, aiThinking);
   const activeReview =
     reviewStatus === "ready" ? (reviewMoments[reviewIndex] ?? null) : null;
   const drillGame = useMemo(
@@ -111,7 +131,34 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
       ? liveGame.moves({ square: selected }).map((move) => move.slice(2))
       : [];
   const rows = moveListRows(moves);
-  const canUndo = humanSide === "r" ? moves.length >= 1 : moves.length >= 2;
+  const historyLabels = useMemo(() => describeLine(START_FEN, moves), [moves]);
+  const moveLabel = (move: string | null) =>
+    move
+      ? describeMove(activeReview?.candidate.rootFen ?? liveGame.fen(), move)
+      : "—";
+  const canUndo =
+    !resigned &&
+    gameMode === "practice" &&
+    (humanSide === "r" ? moves.length >= 1 : moves.length >= 2);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        GAME_STORAGE_KEY,
+        JSON.stringify({
+          version: 1,
+          humanSide,
+          mode: gameMode,
+          moves,
+          resigned,
+        }),
+      );
+    } catch {
+      setStorageWarning(
+        "Không lưu được ván trên trình duyệt. Hãy giữ trang này mở để chơi tiếp.",
+      );
+    }
+  }, [humanSide, gameMode, moves, resigned]);
 
   useEffect(() => {
     const client = new EngineClient((state, text) => {
@@ -129,6 +176,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
 
   useEffect(() => {
     if (
+      resigned ||
       reviewPly !== null ||
       reviewStatus !== "idle" ||
       engineState !== "ready" ||
@@ -187,6 +235,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     aiError,
     reviewPly,
     reviewStatus,
+    resigned,
   ]);
 
   function cancelPending() {
@@ -211,6 +260,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     resetReview();
     setHumanSide(side);
     setMoves([]);
+    setResigned(false);
     setSelected(null);
     setAiError("");
     setMessage("");
@@ -419,15 +469,17 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
         ? `Ôn lại ${reviewIndex + 1}/${reviewMoments.length} — tự tính trước khi xem Pikafish.`
         : reviewPly !== null
           ? `Đang xem lại nước ${reviewPly}/${moves.length}`
-          : snapshot.phase === "finished"
-            ? resultLabel(snapshot.result)
-            : aiThinking
-              ? `Pikafish đang tính cho ${sideName(snapshot.turn)}…`
-              : snapshot.inCheck
-                ? `${sideName(snapshot.turn)} đang bị chiếu Tướng.`
-                : snapshot.turn === humanSide
-                  ? `Tới lượt bạn — ${sideName(humanSide)}.`
-                  : `Tới lượt Pikafish — ${sideName(snapshot.turn)}.`;
+          : resigned
+            ? `${humanSide === "r" ? "Đen" : "Đỏ"} thắng · bạn đã xin thua.`
+            : snapshot.phase === "finished"
+              ? resultLabel(snapshot.result)
+              : aiThinking
+                ? `Pikafish đang tính cho ${sideName(snapshot.turn)}…`
+                : snapshot.inCheck
+                  ? `${sideName(snapshot.turn)} đang bị chiếu Tướng.`
+                  : snapshot.turn === humanSide
+                    ? `Tới lượt bạn — ${sideName(humanSide)}.`
+                    : `Tới lượt Pikafish — ${sideName(snapshot.turn)}.`;
 
   return (
     <div className="app-shell play-vs-ai-shell">
@@ -466,8 +518,8 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
             <div className="eyebrow">VÁN ĐẤU HOÀN CHỈNH</div>
             <h1>Ra quân. Pikafish sẽ đáp lại.</h1>
             <p>
-              Chơi từ thế xuất phát chuẩn. Luật bàn cờ quyết định nước hợp lệ;
-              Pikafish chỉ chọn nước cho phía máy.
+              Bạn cầm một bên, Pikafish cầm bên còn lại. Chọn quân rồi chọn chỗ
+              muốn đi.
             </p>
           </div>
           <div
@@ -488,8 +540,10 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                 <span
                   className={`side-dot ${snapshot.turn === "r" ? "red-dot" : ""}`}
                 />
-                Bạn cầm {sideName(humanSide)} · {sideName(snapshot.turn)} tới
-                lượt
+                Bạn cầm {sideName(humanSide)} ·{" "}
+                {resigned || snapshot.phase === "finished"
+                  ? "Ván đã dừng"
+                  : `${sideName(snapshot.turn)} tới lượt`}
               </span>
               <button
                 className="icon-button"
@@ -569,6 +623,17 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                   <RotateCcw size={15} />
                   Lùi lượt của tôi
                 </button>
+                <button
+                  disabled={resigned || snapshot.phase === "finished"}
+                  onClick={() => {
+                    cancelPending();
+                    resetReview();
+                    setResigned(true);
+                    setSelected(null);
+                  }}
+                >
+                  Xin thua
+                </button>
               </div>
             )}
 
@@ -577,6 +642,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                 {aiError || message}
               </p>
             )}
+            {storageWarning && <p role="alert">{storageWarning}</p>}
 
             <div
               className={`engine-status ${engineState === "error" || aiError ? "engine-error" : ""}`}
@@ -613,6 +679,19 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
             aria-label="Thông tin ván đấu"
           >
             <section className="play-match-card">
+              <label>
+                Cách chơi{" "}
+                <select
+                  value={gameMode}
+                  disabled={moves.length > 0 || resigned}
+                  onChange={(event) =>
+                    setGameMode(event.target.value as GameMode)
+                  }
+                >
+                  <option value="practice">Ván luyện · được đi lại</option>
+                  <option value="challenge">Tự thử sức · không đi lại</option>
+                </select>
+              </label>
               <div className="section-label">
                 <span>
                   <Swords size={16} /> VÁN ĐẤU
@@ -649,8 +728,10 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                   {rows.map((row) => (
                     <div className="play-move-row" role="row" key={row.number}>
                       <b>{row.number}.</b>
-                      <span>{moveLabel(row.red)}</span>
-                      <span>{moveLabel(row.black)}</span>
+                      <span>{historyLabels[(row.number - 1) * 2] ?? "—"}</span>
+                      <span>
+                        {historyLabels[(row.number - 1) * 2 + 1] ?? "—"}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -659,13 +740,17 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
               )}
             </section>
 
-            {snapshot.phase === "finished" && (
+            {(resigned || snapshot.phase === "finished") && (
               <section className="feedback success play-result" role="status">
                 <div>
                   <Flag size={20} />
                   <h3>Ván đấu kết thúc</h3>
                 </div>
-                <p>{resultLabel(snapshot.result)}</p>
+                <p>
+                  {resigned
+                    ? `${humanSide === "r" ? "Đen" : "Đỏ"} thắng · bạn đã xin thua.`
+                    : resultLabel(snapshot.result)}
+                </p>
               </section>
             )}
 
@@ -717,7 +802,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                     </div>
                     {!reviewRevealed ? (
                       <>
-                        <h3>Đừng xem engine. Tính lại trước.</h3>
+                        <h3>Bạn sẽ đi nước nào ở thế này?</h3>
                         <p>
                           Nhìn ý đồ của đối thủ, các nước chiếu/ăn quân trước,
                           rồi chọn một nước trên bàn.
@@ -765,10 +850,10 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                         </p>
                         <p className="review-pv">
                           Biến tham khảo:{" "}
-                          {activeReview.bestLine
-                            .slice(0, 4)
-                            .map(moveLabel)
-                            .join(" · ")}
+                          {describeLine(
+                            activeReview.candidate.rootFen,
+                            activeReview.bestLine.slice(0, 4),
+                          ).join(" · ")}
                         </p>
                         <button
                           className="primary-button"
@@ -811,9 +896,8 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
             </div>
 
             <p className="analysis-note play-rules-note">
-              Giới hạn luật hiện tại: thư viện đã kiểm nước đi, chiếu bí và hết
-              nước; trường chiếu/trường tróc theo luật WXF chưa được phân xử đầy
-              đủ. Trường hợp lặp sẽ được dừng và ghi rõ giới hạn này.
+              Chiếu bí hoặc hết nước đi là thua. Nếu lặp thế, ván sẽ tạm dừng;
+              chưa phân xử trường chiếu/trường tróc và không tính là hòa.
             </p>
           </aside>
         </div>
