@@ -148,6 +148,11 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     !resigned &&
     gameMode === "practice" &&
     (humanSide === "r" ? moves.length >= 1 : moves.length >= 2);
+  const canResumeImportedGame =
+    reviewPly !== null &&
+    !resigned &&
+    snapshot.phase === "playing" &&
+    reviewStatus === "idle";
 
   useEffect(() => {
     try {
@@ -542,13 +547,15 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
             ? `${humanSide === "r" ? "Đen" : "Đỏ"} thắng · bạn đã xin thua.`
             : snapshot.phase === "finished"
               ? resultLabel(snapshot.result)
-              : aiThinking
-                ? `Pikafish đang tính cho ${sideName(snapshot.turn)}…`
-                : snapshot.inCheck
-                  ? `${sideName(snapshot.turn)} đang bị chiếu Tướng.`
-                  : snapshot.turn === humanSide
-                    ? `Tới lượt bạn — ${sideName(humanSide)}.`
-                    : `Tới lượt Pikafish — ${sideName(snapshot.turn)}.`;
+              : aiError
+                ? "Pikafish chưa đi được. Bấm Thử lại để máy tính nước đáp."
+                : aiThinking
+                  ? `Pikafish đang tính cho ${sideName(snapshot.turn)}…`
+                  : snapshot.inCheck
+                    ? `${sideName(snapshot.turn)} đang bị chiếu Tướng.`
+                    : snapshot.turn === humanSide
+                      ? `Tới lượt bạn — ${sideName(humanSide)}.`
+                      : `Tới lượt Pikafish — ${sideName(snapshot.turn)}.`;
 
   return (
     <div className="app-shell play-vs-ai-shell">
@@ -681,7 +688,9 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                 >
                   <ChevronRight size={20} />
                 </button>
-                <button onClick={() => setReviewPly(null)}>Về ván đấu</button>
+                <button onClick={() => setReviewPly(null)}>
+                  {canResumeImportedGame ? "Tiếp tục ván" : "Về ván đấu"}
+                </button>
               </div>
             ) : (
               <div className="board-bottomline play-board-actions">
@@ -735,10 +744,14 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                       ? "Pikafish đang tìm nước đáp trong giới hạn tìm kiếm hiện tại…"
                       : engineState === "error"
                         ? engineError
-                        : "Pikafish sẵn sàng · engine chạy trực tiếp trên thiết bị"}
+                        : aiError
+                          ? `Pikafish chưa đi được: ${aiError}`
+                          : "Pikafish sẵn sàng · engine chạy trực tiếp trên thiết bị"}
               </span>
               {(engineState === "error" || aiError) && (
-                <button onClick={retryEngine}>Thử lại</button>
+                <button onClick={retryEngine}>
+                  {aiError ? "Để Pikafish đi lại" : "Thử lại"}
+                </button>
               )}
             </div>
           </section>

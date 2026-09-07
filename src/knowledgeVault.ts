@@ -1,7 +1,10 @@
+import { position } from "./chess";
+
 export type KnowledgeLanguage = "zh" | "vi" | "mixed";
 export type KnowledgeRights =
   | "public-domain"
   | "public-domain-scan"
+  | "product-original"
   | "reference-only"
   | "lost-source";
 export type KnowledgeKind =
@@ -23,7 +26,7 @@ export interface KnowledgeSource {
   kind: KnowledgeKind[];
   themes: string[];
   rights: KnowledgeRights;
-  status: "primary" | "derivative" | "reconstructed" | "index";
+  status: "primary" | "derivative" | "reconstructed" | "index" | "original";
   url?: string;
   note: string;
 }
@@ -33,6 +36,17 @@ export interface KnowledgeSource {
  * Historical scans marked public-domain are still checked individually before reuse.
  */
 export const KNOWLEDGE_SOURCES: KnowledgeSource[] = [
+  {
+    id: "ky-lo-original-practice",
+    title: "Bộ thế luyện gốc của Kỳ Lộ",
+    language: "vi",
+    era: "2026",
+    kind: ["rules", "middlegame"],
+    themes: ["ăn quân", "bị ăn lại", "ngòi Pháo", "chân Mã", "đường Xe"],
+    rights: "product-original",
+    status: "original",
+    note: "Các thế ngắn do Kỳ Lộ biên soạn để dạy một mục tiêu cụ thể; không phải trích đoạn hay phục dựng cổ phổ.",
+  },
   {
     id: "jinpeng-shibabian",
     title: "Kim Bằng Thập Bát Biến",
@@ -269,6 +283,153 @@ export const KNOWLEDGE_SOURCES: KnowledgeSource[] = [
   },
 ];
 
+export type FoundationalSkill =
+  | "recapture-check"
+  | "line-piece"
+  | "cannon-screen"
+  | "horse-leg";
+
+export interface KnowledgePosition {
+  id: string;
+  sourceId: string;
+  sourceLocator: string;
+  titleVi: string;
+  titleZh?: string;
+  category: "opening" | "middlegame" | "endgame" | "tactic" | "composition";
+  fen: string;
+  sideToMove: "r" | "b";
+  motifs: string[];
+  rights: KnowledgeRights;
+  verified: {
+    legality: boolean;
+    engine: boolean;
+    provenance: boolean;
+  };
+  learning: {
+    outcome: string;
+    description: string;
+    solution: string;
+    hints: string[];
+    explanation: string;
+    kind: "practice" | "transfer";
+    skills: FoundationalSkill[];
+  };
+}
+
+// These are authored fixtures with explicit provenance, not attributed to a
+// historical manual. Classical positions enter this list only after a specific
+// edition/page and intended line have been transcribed and checked.
+export const PLAYABLE_KNOWLEDGE_POSITIONS: KnowledgePosition[] = [
+  {
+    id: "rook-open-file",
+    sourceId: "ky-lo-original-practice",
+    sourceLocator: "Kỳ Lộ fixture v1 / đường Xe",
+    titleVi: "Đường đi của Xe",
+    category: "tactic",
+    fen: "4k4/9/9/9/4p4/9/1n7/9/9/1R2K4 r - - 0 1",
+    sideToMove: "r",
+    motifs: ["đường Xe", "ăn quân", "bị ăn lại"],
+    rights: "product-original",
+    verified: { legality: true, engine: false, provenance: true },
+    learning: {
+      outcome: "Ăn một quân bằng Xe rồi kiểm tra nước ăn lại ngay.",
+      description:
+        "Đỏ đi. Hãy ăn một quân Đen mà quân vừa đi không bị ăn lại ngay.",
+      solution: "b0b3",
+      kind: "practice",
+      skills: ["line-piece", "recapture-check"],
+      hints: [
+        "Xe đi ngang hoặc dọc, miễn là không có quân chắn đường.",
+        "Nhìn cùng cột với Xe đỏ. Giữa Xe và Mã đen có quân nào chắn không?",
+        "Thử Xe b0 ăn Mã b3. Sau đó nhìn xem Đen có quân nào ăn lại Xe được không.",
+      ],
+      explanation:
+        "Xe b0 ăn Mã b3 vì đường đi không bị chắn. Trong thế này, Đen không ăn lại Xe ngay được.",
+    },
+  },
+  {
+    id: "cannon-screen",
+    sourceId: "ky-lo-original-practice",
+    sourceLocator: "Kỳ Lộ fixture v1 / ngòi Pháo",
+    titleVi: "Tìm ngòi cho Pháo",
+    category: "tactic",
+    fen: "4k4/9/7r1/9/4p4/7p1/9/7C1/9/4K4 r - - 0 1",
+    sideToMove: "r",
+    motifs: ["ngòi Pháo", "ăn quân", "bị ăn lại"],
+    rights: "product-original",
+    verified: { legality: true, engine: false, provenance: true },
+    learning: {
+      outcome: "Nhận ra đúng một quân làm ngòi trước khi Pháo ăn quân.",
+      description:
+        "Đỏ đi. Pháo muốn ăn quân phải nhảy qua đúng một quân làm ngòi. Tìm nước ăn mà Pháo không bị ăn lại ngay.",
+      solution: "h2h7",
+      kind: "practice",
+      skills: ["cannon-screen", "recapture-check"],
+      hints: [
+        "Khi ăn quân, Pháo phải nhảy qua đúng một quân làm ngòi.",
+        "Nhìn cột h. Tốt đen ở giữa có thể làm ngòi cho Pháo đỏ.",
+        "Thử Pháo h2 → h7. Có đúng một quân ở giữa: Tốt h4.",
+      ],
+      explanation:
+        "Pháo h2 ăn Xe h7 nhờ Tốt h4 làm ngòi. Sau nước này, Đen không ăn lại Pháo ngay được.",
+    },
+  },
+  {
+    id: "horse-leg",
+    sourceId: "ky-lo-original-practice",
+    sourceLocator: "Kỳ Lộ fixture v1 / chân Mã",
+    titleVi: "Chân Mã có thoáng?",
+    category: "tactic",
+    fen: "4k4/9/9/9/4p4/9/3r5/9/2N6/4K4 r - - 0 1",
+    sideToMove: "r",
+    motifs: ["chân Mã", "ăn quân", "bị ăn lại"],
+    rights: "product-original",
+    verified: { legality: true, engine: false, provenance: true },
+    learning: {
+      outcome: "Kiểm tra chân Mã trước khi chọn nước ăn quân.",
+      description:
+        "Đỏ đi. Tìm nước Mã ăn quân, rồi xem Đen có ăn lại Mã ngay được không.",
+      solution: "c1d3",
+      kind: "practice",
+      skills: ["horse-leg", "recapture-check"],
+      hints: [
+        "Mã đi theo hình chữ nhật. Nếu chân Mã bị chặn thì Mã không đi được hướng đó.",
+        "Từ c1 lên d3, chân Mã nằm ở c2. Ô đó có trống không?",
+        "Thử Mã c1 → d3 ăn Xe, rồi nhìn nước đáp của Đen.",
+      ],
+      explanation:
+        "Mã c1 ăn Xe d3 vì chân Mã ở c2 đang thoáng. Đen không ăn lại Mã ngay được.",
+    },
+  },
+  {
+    id: "transfer-rook",
+    sourceId: "ky-lo-original-practice",
+    sourceLocator: "Kỳ Lộ fixture v1 / thế chuyển",
+    titleVi: "Tự tìm ở thế mới",
+    category: "tactic",
+    fen: "4k4/9/9/9/4p4/9/9/2c4R1/9/4K4 r - - 0 1",
+    sideToMove: "r",
+    motifs: ["đường Xe", "ăn quân", "bị ăn lại"],
+    rights: "product-original",
+    verified: { legality: true, engine: false, provenance: true },
+    learning: {
+      outcome: "Áp dụng cách nhìn đường Xe và nước ăn lại vào một thế mới.",
+      description:
+        "Đỏ đi. Tự tìm một nước ăn quân mà quân vừa đi không bị ăn lại ngay.",
+      solution: "h2c2",
+      kind: "transfer",
+      skills: ["line-piece", "recapture-check"],
+      hints: [
+        "Tìm quân đối phương nằm cùng hàng hoặc cột với Xe.",
+        "Quan sát hàng 2 và khoảng trống giữa Xe đỏ với Pháo đen.",
+        "Thử Xe h2 → c2 ăn Pháo, rồi nhìn xem Đen có ăn lại Xe được không.",
+      ],
+      explanation:
+        "Xe h2 ăn Pháo c2 vì hàng ngang không bị chắn. Trong thế này, Đen không ăn lại Xe ngay được.",
+    },
+  },
+];
+
 export function findKnowledgeSources(term: string): KnowledgeSource[] {
   const q = term.trim().toLocaleLowerCase("vi");
   if (!q) return [...KNOWLEDGE_SOURCES];
@@ -278,6 +439,34 @@ export function findKnowledgeSources(term: string): KnowledgeSource[] {
       .toLocaleLowerCase("vi")
       .includes(q),
   );
+}
+
+export function playablePositionIssues(item: KnowledgePosition): string[] {
+  const issues: string[] = [];
+  const source = KNOWLEDGE_SOURCES.find(
+    (candidate) => candidate.id === item.sourceId,
+  );
+  if (!source || source.rights !== item.rights) issues.push("source-rights");
+  if (!item.sourceLocator.trim()) issues.push("source-locator");
+  if (!item.verified.provenance || !item.verified.legality)
+    issues.push("verification-claim");
+  if (!/^[a-i][0-9][a-i][0-9]$/.test(item.learning.solution))
+    issues.push("solution-format");
+  try {
+    const game = position(item.fen);
+    if (game.turn() !== item.sideToMove) issues.push("side-to-move");
+    if (!game.moves().includes(item.learning.solution))
+      issues.push("solution-legality");
+  } catch {
+    issues.push("fen");
+  }
+  return issues;
+}
+
+export function playableKnowledgePosition(
+  id: string,
+): KnowledgePosition | null {
+  return PLAYABLE_KNOWLEDGE_POSITIONS.find((item) => item.id === id) ?? null;
 }
 
 export function knowledgeCoverage() {

@@ -38,6 +38,7 @@ import {
   nextAttemptOrdinal,
   type Exposures,
   assessAttempt,
+  candidateLimit,
   independentSuccesses,
   parseAttempts,
   summarizeSkills,
@@ -266,7 +267,16 @@ export default function App() {
       );
       return;
     }
-    if (!candidates.includes(uci) && candidates.length === 3) {
+    if (mode === "training") {
+      setCandidates([uci]);
+      setCandidate(uci);
+      setSelected(null);
+      return;
+    }
+    if (
+      !candidates.includes(uci) &&
+      candidates.length === candidateLimit(false)
+    ) {
       setMessage(
         "Bạn đã có 3 nước ứng viên. Bỏ một nước trước khi thêm nước khác.",
       );
@@ -706,6 +716,21 @@ export default function App() {
                 : "Có thể tính trước tối đa 3 nước. Chỉ mở Pikafish khi bạn muốn xem."}
             </p>
             {mode === "training" && (
+              <p className="lesson-provenance">{exercise.provenanceNote}</p>
+            )}
+            {mode === "training" && (
+              <section className="lesson-how-to" aria-label="Cách làm bài">
+                <strong>Bài này làm thế nào?</strong>
+                <ol>
+                  <li>Nhìn mục tiêu: {exercise.concept}</li>
+                  <li>Chạm quân Đỏ, rồi chạm ô muốn đi.</li>
+                  <li>
+                    Bấm <b>Đi nước này</b> để xem Đen có ăn lại ngay không.
+                  </li>
+                </ol>
+              </section>
+            )}
+            {mode === "training" && (
               <div className="lesson-track" aria-label="Chọn bài">
                 {EXERCISES.map((ex, i) => (
                   <button
@@ -726,9 +751,17 @@ export default function App() {
                 <div className="section-label">
                   <span>
                     <ScanLine size={17} />
-                    CÁC NƯỚC ĐANG TÍNH
+                    {mode === "training"
+                      ? "NƯỚC BẠN CHỌN"
+                      : "CÁC NƯỚC ĐANG TÍNH"}
                   </span>
-                  <span>{candidates.length}/3 nước</span>
+                  <span>
+                    {mode === "training"
+                      ? candidates.length
+                        ? "Đã chọn 1 nước"
+                        : "Chọn 1 nước"
+                      : `${candidates.length}/3 nước`}
+                  </span>
                 </div>
                 {candidates.length ? (
                   <div className="candidate-list">
@@ -762,7 +795,7 @@ export default function App() {
                   <div className="empty-candidate">
                     <span className="small-board-mark">＋</span>
                     <p>
-                      Chạm vào quân cờ,
+                      Chạm quân Đỏ,
                       <br />
                       rồi chọn điểm muốn đi.
                     </p>

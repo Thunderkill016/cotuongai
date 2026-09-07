@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   KNOWLEDGE_SOURCES,
+  PLAYABLE_KNOWLEDGE_POSITIONS,
   findKnowledgeSources,
   knowledgeCoverage,
+  playableKnowledgePosition,
+  playablePositionIssues,
 } from "../src/knowledgeVault";
 
 describe("Xiangqi knowledge vault", () => {
@@ -44,5 +47,31 @@ describe("Xiangqi knowledge vault", () => {
     expect(coverage.byKind.get("middlegame")).toBeGreaterThan(0);
     expect(coverage.byKind.get("endgame")).toBeGreaterThan(0);
     expect(coverage.byKind.get("composition")).toBeGreaterThan(0);
+  });
+
+  it("keeps playable positions tied to a source, a legal line and clear rights", () => {
+    expect(PLAYABLE_KNOWLEDGE_POSITIONS).toHaveLength(4);
+    for (const item of PLAYABLE_KNOWLEDGE_POSITIONS) {
+      expect(playablePositionIssues(item)).toEqual([]);
+      expect(item.verified.engine).toBe(false);
+      expect(item.rights).toBe("product-original");
+    }
+    expect(playableKnowledgePosition("cannon-screen")?.learning.solution).toBe(
+      "h2h7",
+    );
+    expect(playableKnowledgePosition("missing")).toBeNull();
+  });
+
+  it("fails closed when a playable position loses its source or legal solution", () => {
+    const original = PLAYABLE_KNOWLEDGE_POSITIONS[0];
+    expect(
+      playablePositionIssues({ ...original, sourceId: "unknown" }),
+    ).toContain("source-rights");
+    expect(
+      playablePositionIssues({
+        ...original,
+        learning: { ...original.learning, solution: "a0a9" },
+      }),
+    ).toContain("solution-legality");
   });
 });

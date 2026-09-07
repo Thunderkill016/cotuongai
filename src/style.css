@@ -462,6 +462,37 @@ h2 {
   color: #697468;
   margin: 19px 0;
 }
+.lesson-provenance {
+  border-left: 3px solid #c4d0b8;
+  color: #697468;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: -7px 0 18px;
+  padding-left: 10px;
+}
+
+.lesson-how-to {
+  margin: -2px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #dce4d2;
+  border-radius: 8px;
+  background: #f4f6ef;
+  color: #405039;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.lesson-how-to strong {
+  display: block;
+  color: #263622;
+}
+
+.lesson-how-to ol {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0 0;
+  padding-left: 20px;
+}
 .lesson-track {
   display: flex;
   gap: 7px;

@@ -1,10 +1,10 @@
 import { inspectMove, position } from "./chess";
+import {
+  PLAYABLE_KNOWLEDGE_POSITIONS,
+  type FoundationalSkill,
+} from "./knowledgeVault";
 
-export type SkillId =
-  | "recapture-check"
-  | "line-piece"
-  | "cannon-screen"
-  | "horse-leg";
+export type SkillId = FoundationalSkill;
 
 export const SKILLS: Record<SkillId, { label: string; description: string }> = {
   "recapture-check": {
@@ -29,6 +29,11 @@ export const SKILLS: Record<SkillId, { label: string; description: string }> = {
 
 export interface Exercise {
   id: string;
+  sourceId: string;
+  sourceLocator: string;
+  provenanceNote: string;
+  verifiedLegality: boolean;
+  engineChecked: boolean;
   title: string;
   concept: string;
   description: string;
@@ -40,82 +45,32 @@ export interface Exercise {
   skills: SkillId[];
 }
 
-// Original miniature positions. They test a bounded immediate-capture skill,
-// not optimal play, game strength, or a full tactical combination.
-export const EXERCISES: Exercise[] = [
-  {
-    id: "rook-open-file",
-    title: "Đường đi của Xe",
-    concept: "Tìm quân có thể ăn",
-    description:
-      "Đỏ đi. Hãy ăn một quân Đen mà quân vừa đi không bị ăn lại ngay.",
-    fen: "4k4/9/9/9/4p4/9/1n7/9/9/1R2K4 r - - 0 1",
-    solution: "b0b3",
-    kind: "practice",
-    skills: ["line-piece", "recapture-check"],
-    hints: [
-      "Xe đi ngang hoặc dọc, miễn là không có quân chắn đường.",
-      "Nhìn cùng cột với Xe đỏ. Giữa Xe và Mã đen có quân nào chắn không?",
-      "Thử Xe b0 ăn Mã b3. Sau đó nhìn xem Đen có quân nào ăn lại Xe được không.",
-    ],
-    explanation:
-      "Xe b0 ăn Mã b3 vì đường đi không bị chắn. Trong thế này, Đen không ăn lại Xe ngay được.",
-  },
-  {
-    id: "cannon-screen",
-    title: "Tìm ngòi cho Pháo",
-    concept: "Nhìn ngòi Pháo",
-    description:
-      "Đỏ đi. Pháo muốn ăn quân phải nhảy qua đúng một quân làm ngòi. Tìm nước ăn mà Pháo không bị ăn lại ngay.",
-    fen: "4k4/9/7r1/9/4p4/7p1/9/7C1/9/4K4 r - - 0 1",
-    solution: "h2h7",
-    kind: "practice",
-    skills: ["cannon-screen", "recapture-check"],
-    hints: [
-      "Khi ăn quân, Pháo phải nhảy qua đúng một quân làm ngòi.",
-      "Nhìn cột h. Tốt đen ở giữa có thể làm ngòi cho Pháo đỏ.",
-      "Thử Pháo h2 → h7. Có đúng một quân ở giữa: Tốt h4.",
-    ],
-    explanation:
-      "Pháo h2 ăn Xe h7 nhờ Tốt h4 làm ngòi. Sau nước này, Đen không ăn lại Pháo ngay được.",
-  },
-  {
-    id: "horse-leg",
-    title: "Chân Mã có thoáng?",
-    concept: "Nhìn chân Mã trước khi ăn",
-    description:
-      "Đỏ đi. Tìm nước Mã ăn quân, rồi xem Đen có ăn lại Mã ngay được không.",
-    fen: "4k4/9/9/9/4p4/9/3r5/9/2N6/4K4 r - - 0 1",
-    solution: "c1d3",
-    kind: "practice",
-    skills: ["horse-leg", "recapture-check"],
-    hints: [
-      "Mã đi theo hình chữ nhật. Nếu chân Mã bị chặn thì Mã không đi được hướng đó.",
-      "Từ c1 lên d3, chân Mã nằm ở c2. Ô đó có trống không?",
-      "Thử Mã c1 → d3 ăn Xe, rồi nhìn nước đáp của Đen.",
-    ],
-    explanation:
-      "Mã c1 ăn Xe d3 vì chân Mã ở c2 đang thoáng. Đen không ăn lại Mã ngay được.",
-  },
-  {
-    id: "transfer-rook",
-    title: "Tự tìm ở thế mới",
-    concept: "Tự tìm ở một thế khác",
-    description:
-      "Đỏ đi. Tự tìm một nước ăn quân mà quân vừa đi không bị ăn lại ngay.",
-    fen: "4k4/9/9/9/4p4/9/9/2c4R1/9/4K4 r - - 0 1",
-    solution: "h2c2",
-    kind: "transfer",
-    skills: ["line-piece", "recapture-check"],
-    hints: [
-      "Tìm quân đối phương nằm cùng hàng hoặc cột với Xe.",
-      "Quan sát hàng 2 và khoảng trống giữa Xe đỏ với Pháo đen.",
-      "Thử Xe h2 → c2 ăn Pháo, rồi nhìn xem Đen có ăn lại Xe được không.",
-    ],
-    explanation:
-      "Xe h2 ăn Pháo c2 vì hàng ngang không bị chắn. Trong thế này, Đen không ăn lại Xe ngay được.",
-  },
-];
+export function candidateLimit(isTraining: boolean): number {
+  // A beginner exercise needs one committed idea, while the free board keeps
+  // space to compare a few alternatives before asking the engine.
+  return isTraining ? 1 : 3;
+}
+
+export const EXERCISES: Exercise[] = PLAYABLE_KNOWLEDGE_POSITIONS.map(
+  (item) => ({
+    id: item.id,
+    sourceId: item.sourceId,
+    sourceLocator: item.sourceLocator,
+    provenanceNote:
+      "Bài do Kỳ Lộ biên soạn, kiểm luật tự động; không phải trích đoạn cổ phổ.",
+    verifiedLegality: item.verified.legality,
+    engineChecked: item.verified.engine,
+    title: item.titleVi,
+    concept: item.learning.outcome,
+    description: item.learning.description,
+    fen: item.fen,
+    solution: item.learning.solution,
+    kind: item.learning.kind,
+    skills: item.learning.skills,
+    hints: item.learning.hints,
+    explanation: item.learning.explanation,
+  }),
+);
 
 export function assessAttempt(
   fen: string,
