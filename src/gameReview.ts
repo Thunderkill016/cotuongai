@@ -96,18 +96,18 @@ export function planReviewCandidates(
   return [...selected.values()].sort((a, b) => a.ply - b.ply).slice(0, limit);
 }
 
-function scoreOrdinal(score: Score): number | null {
-  if (score.bound !== "exact") return null;
-  if (score.kind === "cp") return score.value;
-  const distance = Math.min(99, Math.abs(score.value));
-  return score.value >= 0 ? 100000 - distance * 100 : -100000 + distance * 100;
-}
-
 export function evaluationLossCp(best: Score, played: Score): number | null {
-  const bestValue = scoreOrdinal(best);
-  const playedValue = scoreOrdinal(played);
-  if (bestValue === null || playedValue === null) return null;
-  return Math.max(0, bestValue - playedValue);
+  // Mate distance is a different unit and must never be presented as centipawns.
+  if (
+    best.bound !== "exact" ||
+    played.bound !== "exact" ||
+    best.kind !== "cp" ||
+    played.kind !== "cp" ||
+    !Number.isFinite(best.value) ||
+    !Number.isFinite(played.value)
+  )
+    return null;
+  return Math.max(0, best.value - played.value);
 }
 
 export function classifyReviewMoment(

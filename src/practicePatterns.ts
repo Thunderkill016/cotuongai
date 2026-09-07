@@ -75,7 +75,8 @@ export function summarizePracticePatterns(
 
   const patterns = [...tags.entries()].map(([tag, tagged]) => {
     const negativePositions = tagged.filter(
-      (card) => card.reviewKind !== "good-find",
+      (card) =>
+        card.reviewKind === "major-miss" || card.reviewKind === "improvement",
     ).length;
     const majorMissPositions = tagged.filter(
       (card) => card.reviewKind === "major-miss",
@@ -137,12 +138,12 @@ export function profileSampleNote(
 ): string {
   switch (sample) {
     case "empty":
-      return "Chưa có dữ liệu từ ván đã review.";
+      return "Chưa có thế nào từ các ván đã phân tích.";
     case "sparse":
-      return "Dữ liệu còn rất ít; chưa đủ để gọi bất kỳ motif nào là điểm yếu ổn định.";
+      return "Mới có vài thế; cần thêm ván để biết bạn thường vướng ở đâu.";
     case "growing":
       return "Đã có vài thế để thấy tín hiệu ban đầu, nhưng vẫn cần thêm ván để kết luận chắc hơn.";
     case "broader":
-      return "Mẫu đã rộng hơn; các mục lặp lại vẫn chỉ là evidence từ những ván đã lưu, không phải đánh giá trình độ tổng quát.";
+      return "Các mục này đã xuất hiện trong nhiều thế được lưu. Chúng giúp chọn bài ôn, chưa nói lên trình độ chung.";
   }
 }

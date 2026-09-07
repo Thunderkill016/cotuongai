@@ -77,10 +77,23 @@ describe("post-game review planning", () => {
         { kind: "mate", value: 4, bound: "exact" },
         { kind: "cp", value: 500, bound: "exact" },
       ),
-    ).toBeGreaterThan(90_000);
+    ).toBeNull();
     expect(
       evaluationLossCp({ kind: "cp", value: 100, bound: "lower" }, cp(0)),
     ).toBeNull();
+  });
+
+  it("never reports mate distance or non-finite scores as centipawn loss", () => {
+    expect(
+      evaluationLossCp(
+        { kind: "mate", value: 2, bound: "exact" },
+        { kind: "mate", value: 5, bound: "exact" },
+      ),
+    ).toBeNull();
+    expect(
+      evaluationLossCp(cp(100), { kind: "mate", value: -2, bound: "exact" }),
+    ).toBeNull();
+    expect(evaluationLossCp(cp(Infinity), cp(0))).toBeNull();
   });
 
   it("labels good engine matches separately from mistakes", () => {

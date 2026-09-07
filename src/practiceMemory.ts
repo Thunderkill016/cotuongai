@@ -45,6 +45,7 @@ export interface GamePracticeCard {
   lastAttemptAt: number | null;
   lastMove: string | null;
   lastOutcome: PracticeOutcome | null;
+  lastAttemptKind?: "first" | "scheduled" | "repeated";
 }
 
 function hash(value: string): string {
@@ -114,19 +115,24 @@ export function recordPracticeAttempt(
     throw new Error("Nước ôn lại không hợp lệ trong thế đã lưu.");
 
   const correct = move === card.bestmove;
+  if (!Number.isFinite(at) || at < card.updatedAt)
+    throw new Error("Thời điểm ôn không hợp lệ.");
+  const repeated = card.attempts > 0 && at < card.dueAt;
   const nextStreak = correct ? card.consecutiveSuccesses + 1 : 0;
   const interval = correct ? successIntervalMs(card, nextStreak) : 4 * HOUR;
 
   return {
     ...card,
     updatedAt: at,
-    dueAt: at + interval,
+    dueAt: repeated ? card.dueAt : at + interval,
     attempts: card.attempts + 1,
     successes: card.successes + (correct ? 1 : 0),
-    consecutiveSuccesses: nextStreak,
+    consecutiveSuccesses: repeated ? card.consecutiveSuccesses : nextStreak,
     lastAttemptAt: at,
     lastMove: move,
     lastOutcome: correct ? "correct" : "missed",
+    lastAttemptKind:
+      card.attempts === 0 ? "first" : repeated ? "repeated" : "scheduled",
   };
 }
 
@@ -211,22 +217,27 @@ function severity(kind: ReviewMomentKind): number {
 export function buildTodayPracticeQueue(
   cards: GamePracticeCard[],
   now: number = Date.now(),
-  limit = 8,
+  limit = 5,
 ): GamePracticeCard[] {
   if (!Number.isInteger(limit) || limit < 1)
     throw new Error("Giới hạn buổi ôn không hợp lệ.");
-  return [...cards]
-    .sort((a, b) => {
-      const aDue = a.dueAt <= now;
-      const bDue = b.dueAt <= now;
-      if (aDue !== bDue) return aDue ? -1 : 1;
-      if (aDue && severity(a.reviewKind) !== severity(b.reviewKind))
-        return severity(b.reviewKind) - severity(a.reviewKind);
-      return (
-        a.dueAt - b.dueAt || severity(b.reviewKind) - severity(a.reviewKind)
-      );
-    })
+  return [...new Map(cards.map((card) => [card.id, card])).values()]
+    .filter((card) => card.dueAt <= now)
+    .sort(
+      (a, b) =>
+        a.dueAt - b.dueAt || severity(b.reviewKind) - severity(a.reviewKind),
+    )
     .slice(0, limit);
+}
+
+export function practiceDueLabel(dueAt: number, now: number): string {
+  if (dueAt <= now) return "Ôn ngay";
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const due = new Date(dueAt);
+  return due.toDateString() === tomorrow.toDateString()
+    ? "Ôn ngày mai"
+    : "Ôn sau";
 }
 
 export function duePracticeCount(
@@ -240,7 +251,7 @@ function isUci(value: unknown): value is string {
   return typeof value === "string" && /^[a-i][0-9][a-i][0-9]$/.test(value);
 }
 
-function isCard(value: unknown): value is GamePracticeCard {
+function hasCardFields(value: unknown): value is GamePracticeCard {
   if (!value || typeof value !== "object") return false;
   const card = value as Partial<GamePracticeCard>;
   return (
@@ -275,6 +286,67 @@ function isCard(value: unknown): value is GamePracticeCard {
   );
 }
 
+function isCard(value: unknown): value is GamePracticeCard {
+  if (!hasCardFields(value)) return false;
+  const card = value;
+  const counts = [
+    card.sourcePly,
+    card.attempts,
+    card.successes,
+    card.consecutiveSuccesses,
+  ];
+  const times = [
+    card.createdAt,
+    card.updatedAt,
+    card.dueAt,
+    card.engineBudgetMs,
+  ];
+  if (
+    counts.some((n) => !Number.isSafeInteger(n) || n < 0) ||
+    times.some((n) => !Number.isFinite(n) || n < 0) ||
+    card.successes > card.attempts ||
+    card.consecutiveSuccesses > card.successes ||
+    (card.lossCp !== null &&
+      (!Number.isFinite(card.lossCp) || card.lossCp < 0)) ||
+    (card.lastAttemptAt !== null &&
+      (!Number.isFinite(card.lastAttemptAt) || card.lastAttemptAt < 0)) ||
+    card.bestLine.length === 0 ||
+    card.bestLine.length > 8 ||
+    card.bestLine[0] !== card.bestmove ||
+    !card.tags.every((tag) =>
+      [
+        "check",
+        "capture",
+        "cannon",
+        "rook",
+        "horse",
+        "pawn",
+        "advisor",
+        "elephant",
+        "general",
+      ].includes(tag),
+    ) ||
+    (card.lastAttemptKind !== undefined &&
+      !["first", "scheduled", "repeated"].includes(card.lastAttemptKind))
+  )
+    return false;
+  // Browser storage is untrusted. Validate the actual position and sequential line
+  // before any view can replay it, while preserving other valid cards.
+  try {
+    const game = position(card.rootFen);
+    if (
+      game.turn() !== card.side ||
+      !game.moves().includes(card.playedMove) ||
+      (card.lastMove !== null && !game.moves().includes(card.lastMove))
+    )
+      return false;
+    position(card.rootFen, card.bestLine);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function parsePracticeCards(raw: string | null): GamePracticeCard[] {
   if (!raw) return [];
   let parsed: unknown;
@@ -293,7 +365,7 @@ export function parsePracticeCards(raw: string | null): GamePracticeCard[] {
 export function reviewKindLabel(kind: ReviewMomentKind): string {
   switch (kind) {
     case "major-miss":
-      return "Chỗ mất nhiều đánh giá engine";
+      return "Nước cần tính lại kỹ";
     case "improvement":
       return "Có nước mạnh hơn đáng kể";
     case "alternative":

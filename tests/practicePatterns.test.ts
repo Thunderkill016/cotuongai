@@ -47,7 +47,7 @@ describe("practice evidence profile", () => {
       positions: 1,
       evidence: "single",
     });
-    expect(profileSampleNote(profile.sample)).toContain("chưa đủ");
+    expect(profileSampleNote(profile.sample)).toContain("cần thêm ván");
   });
 
   it("requires multiple distinct positions before calling a signal recurring", () => {
@@ -65,6 +65,19 @@ describe("practice evidence profile", () => {
       negativePositions: 2,
       evidence: "recurring",
     });
+  });
+
+  it("does not label a comparable alternative as a verified mistake", () => {
+    const profile = summarizePracticePatterns(
+      [
+        card("alternative", ["cannon"], {
+          reviewKind: "alternative",
+          lossCp: 1,
+        }),
+      ],
+      20,
+    );
+    expect(profile.patterns[0].negativePositions).toBe(0);
   });
 
   it("keeps two observations at repeated rather than recurring", () => {
