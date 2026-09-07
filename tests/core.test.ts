@@ -5,6 +5,7 @@ import {
   recommendExercise,
   summarizeSkills,
   assessAttempt,
+  candidateLimit,
   independentSuccesses,
   parseAttempts,
   parseExposures,
@@ -76,6 +77,10 @@ describe("legal Xiangqi boundaries", () => {
 });
 
 describe("bounded teaching fixtures", () => {
+  it("asks for one committed move in a guided exercise and retains comparison in free play", () => {
+    expect(candidateLimit(true)).toBe(1);
+    expect(candidateLimit(false)).toBe(3);
+  });
   for (const ex of EXERCISES)
     it(`${ex.id}: solution is a legal capture without immediate recapture`, () => {
       const result = inspectMove(ex.fen, ex.solution);
