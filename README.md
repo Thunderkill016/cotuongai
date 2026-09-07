@@ -12,6 +12,12 @@ Checkmate and stalemate are losses. Repetition pauses without declaring a draw b
 
 Verified locally on 2026-09-07: `npm run quality` passes (51 tests, typecheck, formatter and build). Chromium executed real WASM/NNUE searches with `crossOriginIsolated: true`, both human colors, practice undo, challenge undo rejection, resignation during engine search, replay and reload of a resigned game. Screenshots inspected at 1440px and 390px; no horizontal overflow at 390px. This is browser emulation, not physical-device or learner-outcome validation. CI/merge/deployment are separate gates.
 
+## Portable games and due practice
+
+`Lưu ván ra tệp` downloads a versioned Kỳ Lộ JSON record containing the standard starting FEN, legal moves, human side, mode and resignation. `Mở tệp ván cờ` validates the record before showing a replacement preview; accepted games open in replay. This initial format is not PGN/XQF and does not accept arbitrary starting positions or transfer engine analysis/practice history.
+
+`#/today` takes at most five distinct due positions, oldest overdue first, and ends after those positions. Early repeats are recorded without extending the due date or recall streak. Practice answers use Vietnamese notation; persisted positions and lines are legality-checked before display. Mate scores remain separate from centipawn differences.
+
 ## Scope and acceptance
 
 The first learning outcome is **identify a legal capture and check the opponent's immediate recapture**. Hand-authored miniature positions are engineering/teaching fixtures, not expert-approved curriculum. Store first attempts, retries, hints and answer reveals separately. No Elo, mastery, club-level promise or learner-effectiveness claim.

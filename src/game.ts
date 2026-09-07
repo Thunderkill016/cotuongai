@@ -116,3 +116,38 @@ export function describeGameStatus(game: LocalGame): string {
   const winner = outcome.winner === "r" ? "Đỏ" : "Đen";
   return `${winner} thắng · ${outcome.kind === "resigned" ? "bạn đã xin thua" : outcome.kind === "checkmate" ? "chiếu bí" : "đối thủ hết nước hợp lệ"}.`;
 }
+
+// A small, versioned portable record; not PGN or XQF. Engine analysis and local
+// practice history stay outside this format because they have separate provenance.
+export const MAX_GAME_FILE_BYTES = 20_000;
+export function exportGameFile(game: LocalGame): string {
+  const validated = parseLocalGame(JSON.stringify(game));
+  if (!validated) throw new Error("Ván cờ không hợp lệ để lưu ra tệp.");
+  return JSON.stringify(
+    { format: "ky-lo-game", version: 1, startFen: START_FEN, game: validated },
+    null,
+    2,
+  );
+}
+
+export function importGameFile(raw: string): LocalGame {
+  if (raw.length > MAX_GAME_FILE_BYTES)
+    throw new Error("Tệp ván cờ quá lớn. Chỉ nhận tối đa 20 KB.");
+  let value;
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    throw new Error("Không đọc được tệp ván cờ Kỳ Lộ.");
+  }
+  if (
+    !value ||
+    value.format !== "ky-lo-game" ||
+    value.version !== 1 ||
+    value.startFen !== START_FEN
+  )
+    throw new Error("Chỉ mở được tệp ván Kỳ Lộ từ thế xuất phát chuẩn.");
+  const game = parseLocalGame(JSON.stringify(value.game));
+  if (!game)
+    throw new Error("Tệp chứa nước đi hoặc thông tin ván không hợp lệ.");
+  return game;
+}

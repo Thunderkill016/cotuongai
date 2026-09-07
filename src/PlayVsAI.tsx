@@ -49,6 +49,10 @@ import {
 import "./play.css";
 import {
   createGame,
+  exportGameFile,
+  importGameFile,
+  MAX_GAME_FILE_BYTES,
+  type LocalGame,
   GAME_STORAGE_KEY,
   parseLocalGame,
   type GameMode,
@@ -73,6 +77,10 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
   const [resigned, setResigned] = useState(initialGame.resigned);
   const [gameMode, setGameMode] = useState<GameMode>(initialGame.mode);
   const [storageWarning, setStorageWarning] = useState("");
+  const [fileProposal, setFileProposal] = useState<LocalGame | null>(null);
+  const [fileMessage, setFileMessage] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
+  const fileReadTicket = useRef(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [flipped, setFlipped] = useState(initialGame.humanSide === "b");
   const [aiThinking, setAiThinking] = useState(false);
@@ -266,6 +274,67 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     setMessage("");
     setReviewPly(null);
     setFlipped(side === "b");
+  }
+
+  function downloadGame() {
+    try {
+      const text = exportGameFile({
+        version: 1,
+        humanSide,
+        mode: gameMode,
+        moves,
+        resigned,
+      });
+      const url = URL.createObjectURL(
+        new Blob([text], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ky-lo-van-co.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      setFileMessage("Đã tạo tệp ván cờ.");
+    } catch (error) {
+      setFileMessage((error as Error).message);
+    }
+  }
+
+  async function readGameFile(file: File) {
+    const ticket = ++fileReadTicket.current;
+    setFileProposal(null);
+    setFileMessage("");
+    try {
+      if (file.size > MAX_GAME_FILE_BYTES)
+        throw new Error("Tệp ván cờ quá lớn. Chỉ nhận tối đa 20 KB.");
+      const loaded = importGameFile(await file.text());
+      if (ticket === fileReadTicket.current) setFileProposal(loaded);
+    } catch (error) {
+      if (ticket === fileReadTicket.current)
+        setFileMessage((error as Error).message);
+    }
+  }
+
+  function openProposedGame() {
+    if (!fileProposal) return;
+    cancelPending();
+    resetReview();
+    setHumanSide(fileProposal.humanSide);
+    setMoves(fileProposal.moves);
+    setResigned(fileProposal.resigned);
+    setGameMode(fileProposal.mode);
+    setSelected(null);
+    setAiError("");
+    setMessage("");
+    setFlipped(fileProposal.humanSide === "b");
+    // Open in replay so importing never silently starts an engine turn.
+    setReviewPly(fileProposal.moves.length);
+    setFileProposal(null);
+    setFileMessage(
+      !fileProposal.resigned &&
+        currentSnapshot(fileProposal.moves).phase === "playing"
+        ? "Đã mở ván để xem lại. Bấm Về ván đấu nếu muốn chơi tiếp."
+        : "Đã mở ván để xem lại.",
+    );
   }
 
   function undo() {
@@ -894,6 +963,56 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
                 Ván mới
               </button>
             </div>
+
+            <section aria-label="Lưu và mở ván cờ">
+              <div className="play-match-actions">
+                <button className="secondary-button" onClick={downloadGame}>
+                  Lưu ván ra tệp
+                </button>
+                <button
+                  className="secondary-button"
+                  onClick={() => fileInput.current?.click()}
+                >
+                  Mở tệp ván cờ
+                </button>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept=".json,application/json"
+                  hidden
+                  aria-label="Chọn tệp ván Kỳ Lộ"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) void readGameFile(file);
+                  }}
+                />
+              </div>
+              {fileProposal && (
+                <div role="region" aria-label="Ván cờ sắp mở">
+                  <p>
+                    Ván có {fileProposal.moves.length} nước đi, bạn cầm{" "}
+                    {sideName(fileProposal.humanSide)}. Mở tệp sẽ thay ván đang
+                    giữ trên máy này. Bạn có thể lưu ván hiện tại trước.
+                  </p>
+                  <div className="play-match-actions">
+                    <button
+                      className="primary-button"
+                      onClick={openProposedGame}
+                    >
+                      Mở ván này
+                    </button>
+                    <button
+                      className="secondary-button"
+                      onClick={() => setFileProposal(null)}
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </div>
+              )}
+              {fileMessage && <p role="status">{fileMessage}</p>}
+            </section>
 
             <p className="analysis-note play-rules-note">
               Chiếu bí hoặc hết nước đi là thua. Nếu lặp thế, ván sẽ tạm dừng;
