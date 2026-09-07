@@ -78,9 +78,11 @@ export function position(
 
 export function describeMove(fen: string, uci: string): string {
   const game = position(fen);
+  // Upstream pretty moves uppercase Red piece codes; board pieces stay canonical.
+  const piece = game.get(uci.slice(0, 2));
   const moved = game.move(uci);
-  if (!moved) return uci;
-  return `${PIECE_NAMES[moved.piece]} ${moved.from} → ${moved.to}${moved.captured ? `, bắt ${PIECE_NAMES[moved.captured]}` : ""}`;
+  if (!moved || !piece) return uci;
+  return `${PIECE_NAMES[piece.type]} ${moved.from} → ${moved.to}${moved.captured ? `, ăn ${PIECE_NAMES[moved.captured]}` : ""}`;
 }
 
 export function replay(fen: string, moves: string[]): string {
