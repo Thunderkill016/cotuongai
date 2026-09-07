@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeMove, position, START_FEN } from "../src/chess";
+import { describeLine, describeMove, position, START_FEN } from "../src/chess";
 import {
   canUndoGame,
   createGame,
@@ -12,10 +12,21 @@ import {
 } from "../src/game";
 
 describe("full local game", () => {
+  it("uses each side's file numbering and advances notation with the line", () => {
+    expect(describeLine(START_FEN, ["h2e2", "h9g7", "h0g2", "g7h9"])).toEqual([
+      "Pháo 2 bình 5",
+      "Mã 8 tấn 7",
+      "Mã 2 tấn 3",
+      "Mã 7 thoái 8",
+    ]);
+    expect(describeMove(START_FEN, "a3a4")).toBe("Tốt 9 tấn 1");
+    expect(describeMove(START_FEN, "a0a1")).toBe("Xe 9 tấn 1");
+    expect(describeMove(START_FEN, "a0a9")).toBe("Nước đi không hợp lệ");
+  });
   it("names both Red and Black moves from canonical board pieces", () => {
-    expect(describeMove(START_FEN, "h2e2")).toBe("Pháo h2 → e2");
+    expect(describeMove(START_FEN, "h2e2")).toBe("Pháo 2 bình 5");
     expect(describeMove(position(START_FEN, ["h2e2"]).fen(), "h9g7")).toBe(
-      "Mã h9 → g7",
+      "Mã 8 tấn 7",
     );
   });
   it("enforces human/engine ownership for either chosen side", () => {
