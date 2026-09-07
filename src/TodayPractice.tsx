@@ -11,12 +11,13 @@ import {
 } from "lucide-react";
 import { Board } from "./Board";
 import { deriveBattleCue } from "./battleCue";
-import { position, replay } from "./chess";
+import { describeMove, describeLine, position, replay } from "./chess";
 import {
   buildTodayPracticeQueue,
   duePracticeCount,
   GAME_PRACTICE_STORAGE_KEY,
   parsePracticeCards,
+  practiceDueLabel,
   practiceTagLabel,
   recordPracticeAttempt,
   reviewKindLabel,
@@ -42,21 +43,12 @@ function loadCards(): GamePracticeCard[] {
   }
 }
 
-function moveLabel(move: string | null) {
-  return move ? `${move.slice(0, 2)} → ${move.slice(2)}` : "—";
-}
-
-function dueLabel(dueAt: number, now: number) {
-  if (dueAt <= now) return "Đến hạn ôn";
-  const delta = dueAt - now;
-  const hours = Math.max(1, Math.round(delta / 3_600_000));
-  if (hours < 24) return `Còn khoảng ${hours} giờ`;
-  return `Còn khoảng ${Math.max(1, Math.round(hours / 24))} ngày`;
-}
-
 export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
   const [cards, setCards] = useState(loadCards);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [sessionIds] = useState(() =>
+    buildTodayPracticeQueue(cards, Date.now()).map((card) => card.id),
+  );
+  const [sessionIndex, setSessionIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [guess, setGuess] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -65,13 +57,11 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
   const [storageWarning, setStorageWarning] = useState("");
   const now = Date.now();
 
-  const queue = useMemo(
-    () => buildTodayPracticeQueue(cards, now, 8),
-    [cards, now],
-  );
-  const active = activeId
-    ? (cards.find((card) => card.id === activeId) ?? null)
-    : (queue[0] ?? null);
+  const active =
+    cards.find((card) => card.id === sessionIds[sessionIndex]) ?? null;
+  const finished = sessionIds.length > 0 && sessionIndex >= sessionIds.length;
+  const moveLabel = (move: string | null) =>
+    active && move ? describeMove(active.rootFen, move) : "—";
   const dueCount = duePracticeCount(cards, now);
   const evidenceProfile = summarizePracticePatterns(cards, now);
   const visiblePatterns = evidenceProfile.patterns
@@ -101,11 +91,8 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
       : null;
 
   useEffect(() => {
-    if (!activeId && queue[0]) {
-      setActiveId(queue[0].id);
-      setFlipped(queue[0].side === "b");
-    }
-  }, [activeId, queue]);
+    if (active) setFlipped(active.side === "b");
+  }, [active?.id]);
 
   useEffect(() => {
     const sync = (event: StorageEvent) => {
@@ -151,7 +138,7 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
   }
 
   function commit() {
-    if (!active || !guess) return;
+    if (!active || !guess || revealed) return;
     try {
       const updated = recordPracticeAttempt(active, guess, Date.now());
       save(cards.map((card) => (card.id === active.id ? updated : card)));
@@ -164,16 +151,11 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
 
   function nextCard() {
     if (!active) return;
-    const candidates = buildTodayPracticeQueue(cards, Date.now(), 8).filter(
-      (card) => card.id !== active.id,
-    );
-    const next = candidates[0] ?? null;
-    setActiveId(next?.id ?? null);
+    setSessionIndex((index) => index + 1);
     setSelected(null);
     setGuess(null);
     setRevealed(false);
     setMessage("");
-    if (next) setFlipped(next.side === "b");
   }
 
   return (
@@ -198,7 +180,7 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
         <section className="page-heading today-heading">
           <div>
             <div className="eyebrow">ÔN TỪ CHÍNH VÁN CỦA BẠN</div>
-            <h1>Không học lỗi chung chung. Ôn lại đúng thế đã gặp.</h1>
+            <h1>Ôn lại những thế đã gặp.</h1>
             <p>
               Các thế ở đây chỉ xuất hiện sau khi ván thật đã được Pikafish phân
               tích và bạn đã tự tính lại trước khi xem đáp án.
@@ -219,14 +201,20 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
         {!active || !displayFen || !game ? (
           <section className="today-empty">
             <Target size={34} />
-            <h2>Chưa có thế từ ván thật để ôn.</h2>
+            <h2>
+              {finished
+                ? "Đã xong buổi ôn."
+                : cards.length
+                  ? "Chưa có thế đến hạn ôn."
+                  : "Chưa có thế từ ván thật để ôn."}
+            </h2>
             <p>
-              Chơi một ván với Pikafish, bấm <b>Phân tích ván</b>, tự tính lại
-              các thời điểm được chọn rồi chốt nước. Kỳ Lộ mới tạo lịch ôn từ
-              evidence đó.
+              {finished
+                ? `Bạn đã ôn ${sessionIds.length} thế. Các lần thử đã được lưu để hẹn ôn lại.`
+                : "Chơi một ván với Pikafish, bấm Phân tích ván rồi tự tính lại các nước được chọn. Những thế đó sẽ được lưu để ôn sau."}
             </p>
             <button className="primary-button" onClick={onPlay}>
-              <Swords size={17} /> Chơi ván và tạo dữ liệu thật
+              <Swords size={17} /> Chơi một ván
             </button>
           </section>
         ) : (
@@ -237,7 +225,8 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
             >
               <div className="board-topline">
                 <span className="side-label">
-                  <CalendarClock size={15} /> {dueLabel(active.dueAt, now)}
+                  <CalendarClock size={15} />{" "}
+                  {practiceDueLabel(active.dueAt, now)}
                 </span>
                 <button
                   className="icon-button"
@@ -265,7 +254,7 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                 <span>
                   <span className="legend-dot" />
                   {revealed
-                    ? "Đáp án engine đã mở"
+                    ? "Đã mở nước Pikafish chọn"
                     : guess
                       ? `Nước đang chốt: ${moveLabel(guess)}`
                       : "Tự tính rồi chọn một nước trên bàn"}
@@ -281,7 +270,9 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
             <aside className="coach-panel today-panel">
               <section className="today-card-meta">
                 <div className="section-label">
-                  <span>VÌ SAO THẾ NÀY ĐƯỢC LƯU</span>
+                  <span>
+                    THẾ {sessionIndex + 1}/{sessionIds.length}
+                  </span>
                   <small>nước {active.sourcePly + 1}</small>
                 </div>
                 <h2>{reviewKindLabel(active.reviewKind)}</h2>
@@ -292,10 +283,9 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                 </div>
                 {active.lossCp !== null && (
                   <p className="muted">
-                    Chênh đánh giá engine lúc review:{" "}
-                    {(active.lossCp / 100).toFixed(2)}. Đây là evidence của
-                    Pikafish ở ngân sách tìm kiếm đã lưu, không phải điểm Elo
-                    hay kết luận trình độ.
+                    Chênh lệch Pikafish tính lúc phân tích ván:{" "}
+                    {(active.lossCp / 100).toFixed(2)} điểm. Đây là đánh giá thế
+                    cờ ở lần tính đã lưu.
                   </p>
                 )}
               </section>
@@ -304,8 +294,8 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                 <section className="today-task">
                   <h3>Nhìn thế cờ, tự tính trước.</h3>
                   <p>
-                    Tìm nước chiếu, nước ăn quân và nước đối thủ có thể đáp.
-                    Đừng cố nhớ tọa độ từ lần review trước.
+                    Tìm nước chiếu, nước ăn quân và nước đối thủ có thể đáp. Thử
+                    tính lại nước đáp, đừng chỉ nhớ nước đã xem.
                   </p>
                   <button
                     className="primary-button"
@@ -326,6 +316,13 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                       ? "Lần này bạn tìm đúng nước Pikafish đã lưu."
                       : "Lần này nước bạn chọn vẫn khác nước Pikafish đã lưu."}
                   </div>
+                  {active.lastAttemptKind === "repeated" && (
+                    <p>
+                      Bạn đang thử lại trước hạn ôn. Lần này không làm lùi lịch
+                      ôn.
+                    </p>
+                  )}
+                  <p>Lần ôn tiếp: {practiceDueLabel(active.dueAt, now)}.</p>
                   <dl className="review-comparison">
                     <div>
                       <dt>Trong ván</dt>
@@ -342,13 +339,19 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                   </dl>
                   <p className="review-pv">
                     Biến đã lưu:{" "}
-                    {active.bestLine.slice(0, 5).map(moveLabel).join(" · ")}
+                    {describeLine(
+                      active.rootFen,
+                      active.bestLine.slice(0, 5),
+                    ).join(" · ")}
                   </p>
                   <p className="today-provenance">
                     {active.engineBuild} · {active.engineBudgetMs} ms
                   </p>
                   <button className="primary-button" onClick={nextCard}>
-                    Thế tiếp theo <ChevronRight size={16} />
+                    {sessionIndex + 1 >= sessionIds.length
+                      ? "Xong buổi ôn"
+                      : "Thế tiếp theo"}{" "}
+                    <ChevronRight size={16} />
                   </button>
                 </section>
               )}
@@ -377,11 +380,11 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
                         </div>
                         <dl>
                           <div>
-                            <dt>Thế độc lập</dt>
+                            <dt>Thế đã gặp</dt>
                             <dd>{pattern.positions}</dd>
                           </div>
                           <div>
-                            <dt>Lần ôn sai</dt>
+                            <dt>Lần chọn khác</dt>
                             <dd>{pattern.failedAttempts}</dd>
                           </div>
                           <div>
@@ -403,9 +406,9 @@ export function TodayPractice({ onExit, onPlay }: TodayPracticeProps) {
               <section className="today-history-note">
                 <RefreshCw size={15} />
                 <p>
-                  Lịch hiện dùng heuristic: sai thì quay lại sớm; tự tìm đúng
-                  liên tiếp thì giãn ra 1 → 3 → 7 → 14 ngày. Đây chưa phải lịch
-                  đã được hiệu chuẩn khoa học riêng cho cờ tướng.
+                  Chọn khác nước đã lưu thì ôn lại sớm. Tìm đúng khi đến hạn thì
+                  lần ôn sau cách xa hơn. Thử lại ngay sau khi xem đáp án không
+                  làm lùi lịch ôn.
                 </p>
               </section>
               {storageWarning && (
