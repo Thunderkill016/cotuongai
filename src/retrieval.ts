@@ -42,30 +42,49 @@ export function classifyAttempt(attempt: Attempt): MistakeKind {
   }
 }
 
-function independentSuccessCount(
-  exerciseId: string,
-  attempts: Attempt[],
-): number {
-  return attempts.filter(
-    (attempt) =>
-      attempt.exerciseId === exerciseId &&
-      attempt.success &&
-      attempt.hints === 0 &&
-      !attempt.revealed,
-  ).length;
+const SUCCESS_INTERVALS = [DAY, 3 * DAY, 7 * DAY, 14 * DAY];
+
+function scheduleHistory(attempts: Attempt[]) {
+  let dueAt = -Infinity;
+  let streak = 0;
+  let interval = DAY;
+  let latest: Attempt | undefined;
+  const ordered = [
+    ...new Map(attempts.map((attempt) => [attempt.id, attempt])).values(),
+  ].sort((a, b) => a.at - b.at || a.ordinal - b.ordinal);
+  for (const attempt of ordered) {
+    // Immediate retries remain in history but cannot extend recall spacing.
+    if (latest && attempt.at < dueAt) continue;
+    latest = attempt;
+    const kind = classifyAttempt(attempt);
+    if (kind === "independent-success") {
+      streak++;
+      interval =
+        SUCCESS_INTERVALS[Math.min(streak - 1, SUCCESS_INTERVALS.length - 1)];
+    } else {
+      streak = 0;
+      interval =
+        kind === "answer-revealed"
+          ? 30 * MINUTE
+          : kind === "assisted-success"
+            ? 4 * HOUR
+            : 10 * MINUTE;
+    }
+    dueAt = attempt.at + interval;
+  }
+  return { dueAt, interval, latest };
 }
 
 export function reviewIntervalMs(
   attempt: Attempt,
   attempts: Attempt[],
 ): number {
-  const kind = classifyAttempt(attempt);
-  if (kind === "missed-capture" || kind === "unsafe-capture")
-    return 10 * MINUTE;
-  if (kind === "answer-revealed") return 30 * MINUTE;
-  if (kind === "assisted-success") return 4 * HOUR;
-  const n = independentSuccessCount(attempt.exerciseId, attempts);
-  return [DAY, 3 * DAY, 7 * DAY, 14 * DAY][Math.min(Math.max(n - 1, 0), 3)];
+  return scheduleHistory([
+    ...attempts.filter(
+      (item) => item.exerciseId === attempt.exerciseId && item.at <= attempt.at,
+    ),
+    attempt,
+  ]).interval;
 }
 
 function reasonFor(kind: MistakeKind): string {
@@ -91,10 +110,9 @@ export function buildRetrievalQueue(
     const history = attempts.filter(
       (attempt) => attempt.exerciseId === exercise.id,
     );
-    const latest = history.at(-1);
+    const { latest, dueAt } = scheduleHistory(history);
     if (!latest) return [];
     const kind = classifyAttempt(latest);
-    const dueAt = latest.at + reviewIntervalMs(latest, attempts);
     return [
       {
         exercise,
