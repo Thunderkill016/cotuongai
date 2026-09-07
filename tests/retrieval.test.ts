@@ -44,14 +44,34 @@ describe("spaced retrieval", () => {
 
   it("expands spacing after repeated independent retrieval", () => {
     const first = attempt({ id: "a", ordinal: 1, at: 1 });
-    const second = attempt({ id: "b", ordinal: 2, at: 2 });
-    const third = attempt({ id: "c", ordinal: 3, at: 3 });
+    const second = attempt({ id: "b", ordinal: 2, at: 1 + 24 * 60 * 60_000 });
+    const third = attempt({
+      id: "c",
+      ordinal: 3,
+      at: 1 + 4 * 24 * 60 * 60_000,
+    });
     expect(reviewIntervalMs(second, [first, second])).toBe(
       3 * 24 * 60 * 60_000,
     );
     expect(reviewIntervalMs(third, [first, second, third])).toBe(
       7 * 24 * 60 * 60_000,
     );
+  });
+
+  it("does not extend the due date for immediate repeats or duplicate records", () => {
+    const first = attempt({ id: "first", at: 0 });
+    const repeat = attempt({ id: "repeat", at: 1000, ordinal: 2 });
+    expect(buildRetrievalQueue([repeat, first, first], 2000)[0].dueAt).toBe(
+      24 * 60 * 60_000,
+    );
+    expect(reviewIntervalMs(repeat, [first, repeat])).toBe(24 * 60 * 60_000);
+  });
+  it("keeps the short reveal schedule when the answer is repeated immediately", () => {
+    const revealed = attempt({ id: "reveal", at: 0, revealed: true });
+    const repeat = attempt({ id: "repeat", at: 1000, ordinal: 2 });
+    const queued = buildRetrievalQueue([revealed, repeat], 2000)[0];
+    expect(queued.dueAt).toBe(30 * 60_000);
+    expect(queued.kind).toBe("answer-revealed");
   });
 
   it("puts overdue review ahead of future review", () => {
