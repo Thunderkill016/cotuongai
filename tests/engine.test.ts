@@ -114,6 +114,29 @@ describe("engine request lifecycle with a simulated transport", () => {
     worker.finish(worker.messages.at(-1)!.id, ["a0a9", "b2e2", "h0g2"]);
     await expect(result).rejects.toThrow("Chưa có biến thể");
   });
+  it("plays a legal engine reply even when the optional MultiPV bundle is incomplete", async () => {
+    const worker = await initialize();
+    const result = client.playMove(START_FEN, ["h2e2"]);
+    await Promise.resolve();
+    const request = worker.messages.at(-1)!;
+    expect(request.multipv).toBe(1);
+    worker.emit({ type: "LINE", id: request.id, line: "bestmove h9g7" });
+    await expect(result).resolves.toMatchObject({
+      bestmove: "h9g7",
+      lines: [],
+    });
+  });
+  it("still rejects an illegal engine reply in play mode", async () => {
+    const worker = await initialize();
+    const result = client.playMove(START_FEN);
+    await Promise.resolve();
+    worker.emit({
+      type: "LINE",
+      id: worker.messages.at(-1)!.id,
+      line: "bestmove a0a9",
+    });
+    await expect(result).rejects.toThrow("Chưa có biến thể");
+  });
   it("times out failed initialization and terminates the worker", async () => {
     vi.useFakeTimers();
     const ready = client.init();

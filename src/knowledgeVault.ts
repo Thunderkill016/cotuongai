@@ -316,6 +316,79 @@ export interface KnowledgePosition {
   };
 }
 
+export interface OpeningFamily {
+  id: string;
+  titleVi: string;
+  titleZh?: string;
+  sourceIds: string[];
+  sourceNote: string;
+  goal: string;
+  plans: string[];
+  risks: string[];
+  nextStep: string;
+}
+
+// This is an ideas-first introduction. It deliberately does not attach a
+// named variation or claim a historical line until a particular edition,
+// position and engine-checked continuation have been recorded.
+export const OPENING_FAMILIES: OpeningFamily[] = [
+  {
+    id: "phao-dau",
+    titleVi: "Pháo Đầu",
+    titleZh: "中炮",
+    sourceIds: ["ju-zhong-mi"],
+    sourceNote: "Dòng phổ tham khảo: Quất Trung Bí, bản scan công cộng.",
+    goal: "Đưa Pháo vào trung lộ để gây sức ép sớm và tranh tiên.",
+    plans: [
+      "Ra Mã và thông đường cho Xe thay vì chỉ đẩy Pháo lên một mình.",
+      "Giữ trung lộ có người hỗ trợ trước khi mở cuộc ăn quân.",
+    ],
+    risks: [
+      "Ham công khi quân chưa ra đủ có thể để hở Tướng.",
+      "Đưa Xe ra sớm nhưng tự chặn Mã hoặc Pháo làm thế trận chậm lại.",
+    ],
+    nextStep:
+      "Khi chơi, hỏi: sau khi Pháo vào trung lộ, quân nào sẽ ra tiếp để giữ Pháo?",
+  },
+  {
+    id: "binh-phong-ma",
+    titleVi: "Bình Phong Mã",
+    titleZh: "屏风马",
+    sourceIds: ["mei-hua-pu"],
+    sourceNote: "Dòng phổ tham khảo: Mai Hoa Phổ; các dị bản được giữ riêng.",
+    goal: "Dựng thế Mã vững để giữ trung lộ rồi mới phản công.",
+    plans: [
+      "Để hai Mã phối hợp che các ô quan trọng trước Tướng.",
+      "Chờ đối thủ lộ điểm yếu rồi điều Xe hoặc Pháo phản công.",
+    ],
+    risks: [
+      "Chỉ thủ mà không ra Xe sẽ bị mất tiên và bí quân.",
+      "Chân Mã bị chặn thì bức bình phong không còn chắc như nhìn thấy.",
+    ],
+    nextStep:
+      "Trước mỗi nước Mã, nhìn ô chân Mã và hỏi nước đi đó còn giữ được trung lộ không.",
+  },
+  {
+    id: "phan-cung-ma",
+    titleVi: "Phản Cung Mã",
+    titleZh: "反宫马",
+    sourceIds: ["modern-opening-hu-ronghua"],
+    sourceNote:
+      "Nguồn hiện đại chỉ để tham khảo ý tưởng; lời dạy là bản viết mới của Kỳ Lộ.",
+    goal: "Nhường một nhịp để Mã đứng linh hoạt, rồi tìm lúc phản công.",
+    plans: [
+      "Hoàn tất thế Mã, Sĩ Tượng rồi chọn cánh có thể phản công.",
+      "Dùng Xe và Pháo phối hợp sau khi quân đã thông đường.",
+    ],
+    risks: [
+      "Đi nhiều nước chuẩn bị nhưng quên giữ Tốt trung lộ sẽ bị ép ngay.",
+      "Đừng gọi nước phản công là hay nếu chưa thấy nước đáp của đối thủ.",
+    ],
+    nextStep:
+      "Khi đối thủ dồn quân vào một cánh, tìm cánh còn lại để điều quân phản công.",
+  },
+];
+
 // These are authored fixtures with explicit provenance, not attributed to a
 // historical manual. Classical positions enter this list only after a specific
 // edition/page and intended line have been transcribed and checked.
@@ -467,6 +540,33 @@ export function playableKnowledgePosition(
   id: string,
 ): KnowledgePosition | null {
   return PLAYABLE_KNOWLEDGE_POSITIONS.find((item) => item.id === id) ?? null;
+}
+
+export function openingFamilyIssues(item: OpeningFamily): string[] {
+  const issues: string[] = [];
+  if (!item.titleVi.trim() || !item.goal.trim() || !item.nextStep.trim())
+    issues.push("teaching-copy");
+  if (!item.plans.length || !item.risks.length) issues.push("teaching-shape");
+  if (!item.sourceNote.trim()) issues.push("source-note");
+  if (
+    !item.sourceIds.length ||
+    new Set(item.sourceIds).size !== item.sourceIds.length
+  )
+    issues.push("source-identity");
+  for (const sourceId of item.sourceIds) {
+    const source = KNOWLEDGE_SOURCES.find(
+      (candidate) => candidate.id === sourceId,
+    );
+    if (
+      !source ||
+      !source.kind.includes("opening") ||
+      !source.kind.some(
+        (kind) => kind === "ancient-manual" || kind === "modern-theory",
+      )
+    )
+      issues.push("source-opening");
+  }
+  return issues;
 }
 
 export function knowledgeCoverage() {

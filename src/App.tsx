@@ -45,6 +45,7 @@ import {
   type Attempt,
 } from "./training";
 import { requestCoaching } from "./coach";
+import { OPENING_FAMILIES } from "./knowledgeVault";
 import { recommendNextPractice } from "./retrieval";
 
 function loadHistory(): Attempt[] {
@@ -62,6 +63,9 @@ export default function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<string[]>([]);
   const [candidate, setCandidate] = useState<string | null>(null);
+  const [predictedRecapture, setPredictedRecapture] = useState<boolean | null>(
+    null,
+  );
   const [played, setPlayed] = useState<string | null>(null);
   const [solutionShown, setSolutionShown] = useState(false);
   const [moveObservation, setMoveObservation] = useState("");
@@ -90,7 +94,9 @@ export default function App() {
   } | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
   const [flipped, setFlipped] = useState(false);
-  const [dialog, setDialog] = useState<"progress" | "help" | null>(null);
+  const [dialog, setDialog] = useState<"progress" | "help" | "openings" | null>(
+    null,
+  );
   const [showStarterGuide, setShowStarterGuide] = useState(() => {
     try {
       return localStorage.getItem("ky-lo.onboarding.v1") !== "done";
@@ -224,6 +230,7 @@ export default function App() {
     invalidate();
     setSelected(null);
     setCandidate(null);
+    setPredictedRecapture(null);
     setCandidates([]);
     setPlayed(null);
     setSolutionShown(false);
@@ -270,6 +277,7 @@ export default function App() {
     if (mode === "training") {
       setCandidates([uci]);
       setCandidate(uci);
+      setPredictedRecapture(null);
       setSelected(null);
       return;
     }
@@ -350,13 +358,23 @@ export default function App() {
   }
 
   function submit() {
-    if (!candidate || played || preview || solutionShown || busy) return;
+    if (
+      !candidate ||
+      played ||
+      preview ||
+      solutionShown ||
+      busy ||
+      (mode === "training" && predictedRecapture === null)
+    )
+      return;
     const move = candidate;
     const root = inputFen;
     setAnalysisOpen(false);
     setPreview(null);
     if (mode === "training") {
-      const result = assessAttempt(exercise.fen, move);
+      const prediction = predictedRecapture;
+      if (prediction === null) return;
+      const result = assessAttempt(exercise.fen, move, prediction);
       setPlayed(move);
       setFeedback(result);
       setAttempts((old) => {
@@ -396,6 +414,7 @@ export default function App() {
             exerciseId: exercise.id,
             move,
             success: result.success,
+            predictedRecapture: prediction,
             ...exposure,
             ordinal,
             at: Date.now(),
@@ -482,11 +501,12 @@ export default function App() {
   const currentSide = position(inputFen).turn() === "r" ? "Đỏ" : "Đen";
   const previewLine = preview && analysis ? analysis.lines[preview.line] : null;
   const boardArrow =
-    preview && previewLine && preview.ply < previewLine.pv.length
+    feedback?.reply ??
+    (preview && previewLine && preview.ply < previewLine.pv.length
       ? previewLine.pv[preview.ply]
       : !played
         ? candidate
-        : null;
+        : null);
   const sideInAnalysis = analysis
     ? position(analysis.rootFen).turn() === "r"
       ? "Đỏ"
@@ -530,6 +550,10 @@ export default function App() {
           >
             <Compass size={17} />
             Bàn tự do
+          </button>
+          <button onClick={() => setDialog("openings")}>
+            <BookOpen size={17} />
+            Khai cuộc
           </button>
         </nav>
         <button className="progress-link" onClick={() => setDialog("progress")}>
@@ -668,6 +692,11 @@ export default function App() {
                 {terminal}
               </p>
             )}
+            {feedback?.reply && (
+              <p className="reply-on-board" role="status">
+                Mũi tên chỉ nước Đen ăn lại ngay.
+              </p>
+            )}
             <div
               className={`engine-status ${engineState === "error" ? "engine-error" : ""}`}
               role="status"
@@ -771,7 +800,10 @@ export default function App() {
                         key={move}
                       >
                         <button
-                          onClick={() => setCandidate(move)}
+                          onClick={() => {
+                            setCandidate(move);
+                            setPredictedRecapture(null);
+                          }}
                           aria-pressed={move === candidate}
                         >
                           <span className="candidate-number">{i + 1}</span>
@@ -783,7 +815,10 @@ export default function App() {
                             setCandidates((old) =>
                               old.filter((m) => m !== move),
                             );
-                            if (candidate === move) setCandidate(null);
+                            if (candidate === move) {
+                              setCandidate(null);
+                              setPredictedRecapture(null);
+                            }
                           }}
                         >
                           <X size={14} />
@@ -801,12 +836,46 @@ export default function App() {
                     </p>
                   </div>
                 )}
+                {mode === "training" && candidate && (
+                  <fieldset className="reply-prediction">
+                    <legend>
+                      Trước khi chốt: Đen có ăn lại quân bạn vừa đi ngay không?
+                    </legend>
+                    <div>
+                      <button
+                        type="button"
+                        aria-pressed={predictedRecapture === true}
+                        className={predictedRecapture === true ? "chosen" : ""}
+                        onClick={() => setPredictedRecapture(true)}
+                      >
+                        Có, Đen ăn lại được
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={predictedRecapture === false}
+                        className={predictedRecapture === false ? "chosen" : ""}
+                        onClick={() => setPredictedRecapture(false)}
+                      >
+                        Không, chưa ăn lại được
+                      </button>
+                    </div>
+                    <small>Đoán trước rồi mới xem kết quả.</small>
+                  </fieldset>
+                )}
                 <button
                   className="primary-button"
                   onClick={submit}
-                  disabled={!candidate || busy}
+                  disabled={
+                    !candidate ||
+                    busy ||
+                    (mode === "training" && predictedRecapture === null)
+                  }
                 >
-                  {mode === "training" ? "Đi nước này" : "Đi nước này"}
+                  {mode === "training"
+                    ? predictedRecapture === null
+                      ? "Đoán nước đáp trước"
+                      : "Chốt nước và xem Đen đáp"
+                    : "Đi nước này"}
                   <ArrowRight size={18} />
                 </button>
               </section>
@@ -826,6 +895,16 @@ export default function App() {
                   <h3>{feedback.message}</h3>
                 </div>
                 <p>{feedback.detail}</p>
+                {feedback.prediction && (
+                  <p className="prediction-result">
+                    <strong>
+                      {feedback.prediction.correct
+                        ? "Bạn đoán đúng."
+                        : "Lần này đoán chưa đúng."}
+                    </strong>{" "}
+                    {feedback.prediction.detail}
+                  </p>
+                )}
                 <button className="text-button" onClick={() => resetTurn()}>
                   <RotateCcw size={15} />
                   Thử một nước khác
@@ -1077,7 +1156,9 @@ export default function App() {
           <h2 id="dialog-title">
             {dialog === "progress"
               ? "Những lần bạn đã thử"
-              : "Bắt đầu với bàn cờ"}
+              : dialog === "openings"
+                ? "Sổ tay khai cuộc"
+                : "Bắt đầu với bàn cờ"}
           </h2>
           <button
             className="icon-button"
@@ -1168,6 +1249,38 @@ export default function App() {
               trình độ. Chưa có lịch nhắc nhớ lại theo ngày hoặc dữ liệu đủ để
               gọi một kỹ năng là đã thành thạo.
             </p>
+          </>
+        ) : dialog === "openings" ? (
+          <>
+            <p>
+              Khai cuộc là cách đưa quân ra, giữ Tướng và tranh tiên. Hãy học ý
+              tưởng trước khi nhớ biến.
+            </p>
+            <div className="opening-family-list">
+              {OPENING_FAMILIES.map((family) => (
+                <section className="opening-family" key={family.id}>
+                  <div>
+                    <small>{family.titleZh}</small>
+                    <h3>{family.titleVi}</h3>
+                    <p>{family.goal}</p>
+                  </div>
+                  <strong>Nên làm</strong>
+                  <ul>
+                    {family.plans.map((plan) => (
+                      <li key={plan}>{plan}</li>
+                    ))}
+                  </ul>
+                  <strong>Cẩn thận</strong>
+                  <ul>
+                    {family.risks.map((risk) => (
+                      <li key={risk}>{risk}</li>
+                    ))}
+                  </ul>
+                  <p className="opening-next-step">{family.nextStep}</p>
+                  <small className="opening-source">{family.sourceNote}</small>
+                </section>
+              ))}
+            </div>
           </>
         ) : (
           <>

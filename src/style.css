@@ -493,6 +493,117 @@ h2 {
   margin: 7px 0 0;
   padding-left: 20px;
 }
+
+.opening-family-list {
+  display: grid;
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.opening-family {
+  border: 1px solid #d9e1d5;
+  border-radius: 9px;
+  padding: 15px;
+  background: #f8faf5;
+}
+
+.opening-family h3 {
+  margin: 2px 0 6px;
+  font:
+    600 1.25rem/1.3 "Playfair Display",
+    Georgia,
+    serif;
+  color: var(--green);
+}
+
+.opening-family > div > small,
+.opening-source {
+  color: #71806e;
+  font-size: 0.78rem;
+}
+
+.opening-family > strong {
+  display: block;
+  margin-top: 11px;
+  font-size: 0.86rem;
+  color: #3b4d36;
+}
+
+.opening-family ul {
+  display: grid;
+  gap: 5px;
+  margin: 5px 0 0;
+  padding-left: 20px;
+  color: #566451;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.opening-next-step {
+  margin: 13px 0 7px;
+  border-left: 3px solid #b6c8a7;
+  padding-left: 9px;
+  color: #405039;
+  font-size: 0.88rem;
+}
+
+.reply-prediction {
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid #d7dfd1;
+  border-radius: 8px;
+  color: #405039;
+}
+
+.reply-prediction legend {
+  padding: 0 4px;
+  font-size: 0.87rem;
+  font-weight: 600;
+}
+
+.reply-prediction div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reply-prediction button {
+  min-height: 42px;
+  border: 1px solid #cbd7c3;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fffefa;
+  color: #52634d;
+  font-size: 0.82rem;
+}
+
+.reply-prediction button.chosen {
+  border-color: #54755f;
+  background: #e6efe1;
+  color: #254e42;
+  font-weight: 600;
+}
+
+.reply-prediction small {
+  display: block;
+  margin-top: 7px;
+  color: #75816f;
+  font-size: 0.76rem;
+}
+
+.prediction-result {
+  margin-top: 10px !important;
+  border-top: 1px solid currentColor;
+  padding-top: 10px;
+}
+
+.reply-on-board {
+  margin: 12px 0 0;
+  color: #9e4f35;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 .lesson-track {
   display: flex;
   gap: 7px;
