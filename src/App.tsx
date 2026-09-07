@@ -501,11 +501,12 @@ export default function App() {
   const currentSide = position(inputFen).turn() === "r" ? "Đỏ" : "Đen";
   const previewLine = preview && analysis ? analysis.lines[preview.line] : null;
   const boardArrow =
-    preview && previewLine && preview.ply < previewLine.pv.length
+    feedback?.reply ??
+    (preview && previewLine && preview.ply < previewLine.pv.length
       ? previewLine.pv[preview.ply]
       : !played
         ? candidate
-        : null;
+        : null);
   const sideInAnalysis = analysis
     ? position(analysis.rootFen).turn() === "r"
       ? "Đỏ"
@@ -689,6 +690,11 @@ export default function App() {
             {terminal && (
               <p className="inline-message" role="status">
                 {terminal}
+              </p>
+            )}
+            {feedback?.reply && (
+              <p className="reply-on-board" role="status">
+                Mũi tên chỉ nước Đen ăn lại ngay.
               </p>
             )}
             <div

@@ -597,6 +597,13 @@ h2 {
   border-top: 1px solid currentColor;
   padding-top: 10px;
 }
+
+.reply-on-board {
+  margin: 12px 0 0;
+  color: #9e4f35;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
 .lesson-track {
   display: flex;
   gap: 7px;

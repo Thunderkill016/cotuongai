@@ -104,7 +104,9 @@ describe("bounded teaching fixtures", () => {
   });
   it("a legal recapture refutes the immediate-safety objective", () => {
     const fen = "4k4/9/9/9/4p4/2r6/2n6/9/9/2R1K4 r - - 0 1";
-    expect(assessAttempt(fen, "c0c3").success).toBe(false);
+    const result = assessAttempt(fen, "c0c3");
+    expect(result.success).toBe(false);
+    expect(result.reply).toBe("c4c3");
   });
   const record: Attempt = {
     id: "a",

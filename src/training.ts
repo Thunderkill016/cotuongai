@@ -76,6 +76,7 @@ export interface AttemptAssessment {
   success: boolean;
   message: string;
   detail: string;
+  reply: string | null;
   prediction: { correct: boolean; detail: string } | null;
 }
 
@@ -104,6 +105,9 @@ export function assessAttempt(
       success: false,
       message: "Nước này đi được, nhưng chưa ăn quân.",
       detail: `${describeMove(fen, move)} chưa ăn quân. Bài này cần tìm một nước ăn quân, rồi nhìn nước đáp của Đen.`,
+      reply: actualRecapture
+        ? `${recaptures[0].from}${recaptures[0].to}`
+        : null,
       prediction,
     };
   if (recaptures.length) {
@@ -116,6 +120,7 @@ export function assessAttempt(
         after.fen(),
         `${recaptures[0].from}${recaptures[0].to}`,
       )}. Ăn được quân chưa chắc đã lời nếu quân vừa đi bị ăn lại ngay.`,
+      reply: `${recaptures[0].from}${recaptures[0].to}`,
       prediction,
     };
   }
@@ -123,6 +128,7 @@ export function assessAttempt(
     success: true,
     message: "Đúng rồi — nước này ăn quân mà không bị ăn lại ngay.",
     detail: `${describeMove(fen, move)} ăn quân mà Đen không ăn lại ngay. Điều đó chưa có nghĩa đây là nước hay nhất của cả ván.`,
+    reply: null,
     prediction,
   };
 }
