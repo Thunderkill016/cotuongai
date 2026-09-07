@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { describeLine, describeMove, position, START_FEN } from "../src/chess";
 import {
   canUndoGame,
+  exportGameFile,
+  importGameFile,
+  MAX_GAME_FILE_BYTES,
   createGame,
   gameOutcome,
   parseLocalGame,
@@ -99,6 +102,32 @@ describe("full local game", () => {
       check: true,
     });
   });
+  it("round-trips portable games with side, mode, moves and resignation", () => {
+    const game = resignGame(
+      playGameMove(createGame("b", "challenge"), "h2e2", "engine"),
+    );
+    const text = exportGameFile(game);
+    expect(JSON.parse(text).startFen).toBe(START_FEN);
+    expect(importGameFile(text)).toEqual(game);
+    expect(importGameFile(exportGameFile(createGame()))).toEqual(createGame());
+  });
+  it("rejects foreign, oversized and illegal game files without trusting claimed results", () => {
+    const valid = JSON.parse(exportGameFile(createGame()));
+    for (const raw of [
+      "{",
+      "null",
+      " ".repeat(MAX_GAME_FILE_BYTES + 1),
+      JSON.stringify({ ...valid, version: 2 }),
+      JSON.stringify({ ...valid, format: "pgn" }),
+      JSON.stringify({ ...valid, startFen: "invalid" }),
+      JSON.stringify({ ...valid, game: { ...createGame(), moves: ["a0a9"] } }),
+    ])
+      expect(() => importGameFile(raw)).toThrow();
+    expect(importGameFile(JSON.stringify({ ...valid, winner: "b" }))).toEqual(
+      createGame(),
+    );
+  });
+
   it("rejects corrupt storage, forged results and overlong histories", () => {
     for (const value of [
       null,
