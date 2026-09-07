@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   KNOWLEDGE_SOURCES,
+  OPENING_FAMILIES,
   PLAYABLE_KNOWLEDGE_POSITIONS,
   findKnowledgeSources,
   knowledgeCoverage,
+  openingFamilyIssues,
   playableKnowledgePosition,
   playablePositionIssues,
 } from "../src/knowledgeVault";
@@ -73,5 +75,24 @@ describe("Xiangqi knowledge vault", () => {
         learning: { ...original.learning, solution: "a0a9" },
       }),
     ).toContain("solution-legality");
+  });
+
+  it("keeps opening introductions tied to opening sources and original teaching copy", () => {
+    expect(OPENING_FAMILIES.map((item) => item.id)).toEqual([
+      "phao-dau",
+      "binh-phong-ma",
+      "phan-cung-ma",
+    ]);
+    for (const item of OPENING_FAMILIES)
+      expect(openingFamilyIssues(item)).toEqual([]);
+  });
+
+  it("fails closed when an opening loses its opening source", () => {
+    expect(
+      openingFamilyIssues({
+        ...OPENING_FAMILIES[0],
+        sourceIds: ["vietnamese-xiangqi-language"],
+      }),
+    ).toContain("source-opening");
   });
 });

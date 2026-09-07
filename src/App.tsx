@@ -45,6 +45,7 @@ import {
   type Attempt,
 } from "./training";
 import { requestCoaching } from "./coach";
+import { OPENING_FAMILIES } from "./knowledgeVault";
 import { recommendNextPractice } from "./retrieval";
 
 function loadHistory(): Attempt[] {
@@ -90,7 +91,9 @@ export default function App() {
   } | null>(null);
   const [coachBusy, setCoachBusy] = useState(false);
   const [flipped, setFlipped] = useState(false);
-  const [dialog, setDialog] = useState<"progress" | "help" | null>(null);
+  const [dialog, setDialog] = useState<"progress" | "help" | "openings" | null>(
+    null,
+  );
   const [showStarterGuide, setShowStarterGuide] = useState(() => {
     try {
       return localStorage.getItem("ky-lo.onboarding.v1") !== "done";
@@ -530,6 +533,10 @@ export default function App() {
           >
             <Compass size={17} />
             Bàn tự do
+          </button>
+          <button onClick={() => setDialog("openings")}>
+            <BookOpen size={17} />
+            Khai cuộc
           </button>
         </nav>
         <button className="progress-link" onClick={() => setDialog("progress")}>
@@ -1077,7 +1084,9 @@ export default function App() {
           <h2 id="dialog-title">
             {dialog === "progress"
               ? "Những lần bạn đã thử"
-              : "Bắt đầu với bàn cờ"}
+              : dialog === "openings"
+                ? "Sổ tay khai cuộc"
+                : "Bắt đầu với bàn cờ"}
           </h2>
           <button
             className="icon-button"
@@ -1168,6 +1177,38 @@ export default function App() {
               trình độ. Chưa có lịch nhắc nhớ lại theo ngày hoặc dữ liệu đủ để
               gọi một kỹ năng là đã thành thạo.
             </p>
+          </>
+        ) : dialog === "openings" ? (
+          <>
+            <p>
+              Khai cuộc là cách đưa quân ra, giữ Tướng và tranh tiên. Hãy học ý
+              tưởng trước khi nhớ biến.
+            </p>
+            <div className="opening-family-list">
+              {OPENING_FAMILIES.map((family) => (
+                <section className="opening-family" key={family.id}>
+                  <div>
+                    <small>{family.titleZh}</small>
+                    <h3>{family.titleVi}</h3>
+                    <p>{family.goal}</p>
+                  </div>
+                  <strong>Nên làm</strong>
+                  <ul>
+                    {family.plans.map((plan) => (
+                      <li key={plan}>{plan}</li>
+                    ))}
+                  </ul>
+                  <strong>Cẩn thận</strong>
+                  <ul>
+                    {family.risks.map((risk) => (
+                      <li key={risk}>{risk}</li>
+                    ))}
+                  </ul>
+                  <p className="opening-next-step">{family.nextStep}</p>
+                  <small className="opening-source">{family.sourceNote}</small>
+                </section>
+              ))}
+            </div>
           </>
         ) : (
           <>
