@@ -1,12 +1,20 @@
 # Kỳ Lộ — Xiangqi Coach
 
-An independent, Vietnamese 2D Xiangqi trainer. First milestone: a beginner can inspect a position, choose a legal capture, use progressively clearer hints, inspect real Pikafish analysis, and attempt a different position without help.
+An independent Vietnamese Xiangqi trainer with full local games against Pikafish, a 3D board and a keyboard-accessible 2D view. The active priorities are in `docs/CODEX_MAX_MISSION.md`.
+
+## Full games (P0)
+
+Choose Red or Black, then start a standard game. Pikafish automatically plays the opposite side. Practice allows undo to the previous human decision; challenge does not. Resign, replay individual moves, return to the live position, or reopen the browser's saved game. Opening setup preserves the saved game until a new game starts. Storage is validated local convenience data, not an authoritative match record.
+
+Checkmate and stalemate are losses. Repetition pauses without declaring a draw because full WXF check/chase adjudication is unsupported. The existing wrapper's 300-half-move limit also pauses without declaring a draw. Tournament draw adjudication, clocks and post-game coaching remain future work.
+
+Verified locally on 2026-09-07: `npm run quality` passes (51 tests, typecheck, formatter and build). Chromium executed real WASM/NNUE searches with `crossOriginIsolated: true`, both human colors, practice undo, challenge undo rejection, resignation during engine search, replay and reload of a resigned game. Screenshots inspected at 1440px and 390px; no horizontal overflow at 390px. This is browser emulation, not physical-device or learner-outcome validation. CI/merge/deployment are separate gates.
 
 ## Scope and acceptance
 
 The first learning outcome is **identify a legal capture and check the opponent's immediate recapture**. Hand-authored miniature positions are engineering/teaching fixtures, not expert-approved curriculum. Store first attempts, retries, hints and answer reveals separately. No Elo, mastery, club-level promise or learner-effectiveness claim.
 
-The full slice includes keyboard/touch board, legal moves, candidate selection, gated hints, real browser WASM analysis, replayable PV, optional server-side AI hint selection, free analysis from the opening, and local attempt history. 3D, accounts, multiplayer, full tournament repetition adjudication and generated curricula are out of scope.
+The original training slice includes keyboard/touch board, legal moves, candidate selection, gated hints, real browser WASM analysis, replayable PV, optional server-side AI hint selection, free analysis from the opening, and local attempt history. Accounts, multiplayer, full tournament repetition adjudication and generated curricula remain out of scope for this slice.
 
 Success gates: rules regression fixtures; all curated solution moves legal; PV legal at the requested root; typed cp/mate scores; stale/cancelled result exclusion; validated persistence; bounded AI choices; responsive browser smoke; clean typecheck/build.
 
@@ -38,7 +46,7 @@ Knowledge-pack input: xiangqi_gpt6_knowledge_pack.zip, SHA256 e911bc8580e390be41
 
 ## Verification
 
-Local verification on 2026-09-06:
+Historical verification on 2026-09-06 (superseded where the P0 verification above provides current evidence):
 
 - `npm run quality`: PASS on the final application tree. Typecheck clean; 34/34 tests across two files; formatter clean; production build successful.
 - The tests cover movement restrictions, facing generals, exact undo, repetition detection, stalemate, all four original exercise solutions, immediate recaptures, assistance/history validation, adaptive recommendation/skill summaries, cp/mate/bound parsing, coherent MultiPV selection, legal PV replay, invalid AI selections, request cancellation, stale results, Worker failure/reload and timeout.
