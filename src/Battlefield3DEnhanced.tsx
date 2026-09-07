@@ -1,8 +1,15 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { FILES, pieceName, position, squareAt } from "./chess";
-import type { BoardViewProps } from "./Board2D";
+import { Board2D, type BoardViewProps } from "./Board2D";
+import {
+  checkedGeneral,
+  fitBoardDistance,
+  horsePaths,
+  isBoardTap,
+  transitionCue,
+} from "./battleCue";
 
 type PieceKind = "k" | "a" | "b" | "n" | "r" | "c" | "p";
 type Motion = {
@@ -12,6 +19,8 @@ type Motion = {
   duration: number;
   arc: number;
 };
+// Brief victim reaction, within the existing attacker animation budget.
+const CAPTURE_REACTION_MS = 600;
 
 const COLORS = {
   red: new THREE.Color("#a63f31"),
@@ -378,6 +387,14 @@ export function Battlefield3DEnhanced({
   const disabledRef = useRef(disabled);
   const animatedMoveRef = useRef<string | null>(null);
   const reducedMotionRef = useRef(false);
+  const previousFenRef = useRef<string | null>(null);
+  const [webglFailed, setWebglFailed] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  // Parents derive fresh arrays on status updates. Rebuild only when their values change,
+  // so an engine-loading render cannot erase an in-flight move animation.
+  const destinationKey = destinations.join(",");
+  const tutorialKey = tutorialSquares.join(",");
+  const effectKey = JSON.stringify(moveEffect);
 
   onSquareRef.current = onSquare;
   disabledRef.current = disabled;
@@ -386,16 +403,26 @@ export function Battlefield3DEnhanced({
     const mount = mountRef.current;
     if (!mount) return;
 
-    reducedMotionRef.current = !!window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotion = () => {
+      reducedMotionRef.current = motionQuery.matches;
+      setReducedMotion(motionQuery.matches);
+    };
+    syncMotion();
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#d6cebd");
-    scene.fog = new THREE.Fog("#d6cebd", 16, 26);
+    scene.fog = new THREE.Fog("#d6cebd", 30, 45);
 
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 60);
     camera.position.set(0, 8.8, 10.7);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+    } catch {
+      setWebglFailed(true);
+      return;
+    }
+    motionQuery.addEventListener("change", syncMotion);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -408,7 +435,7 @@ export function Battlefield3DEnhanced({
     controls.dampingFactor = 0.08;
     controls.enablePan = false;
     controls.minDistance = 7.8;
-    controls.maxDistance = 16;
+    controls.maxDistance = 30;
     controls.minPolarAngle = 0.46;
     controls.maxPolarAngle = 1.2;
 
@@ -435,6 +462,14 @@ export function Battlefield3DEnhanced({
       const height = Math.max(420, Math.min(width * 1.08, 720));
       renderer.setSize(width, height, false);
       camera.aspect = width / height;
+      const distance = fitBoardDistance(camera.aspect, camera.fov);
+      const direction = camera.position
+        .clone()
+        .sub(controls.target)
+        .normalize();
+      camera.position
+        .copy(controls.target)
+        .addScaledVector(direction, distance);
       camera.updateProjectionMatrix();
     };
     resize();
@@ -443,8 +478,27 @@ export function Battlefield3DEnhanced({
 
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    let pointerStart: { x: number; y: number } | null = null;
+    const beginPick = (event: PointerEvent) => {
+      pointerStart =
+        event.isPrimary && event.button === 0
+          ? { x: event.clientX, y: event.clientY }
+          : null;
+    };
+    const cancelPick = () => {
+      pointerStart = null;
+    };
+    const trackPick = (event: PointerEvent) => {
+      if (!isBoardTap(pointerStart, { x: event.clientX, y: event.clientY }))
+        pointerStart = null;
+    };
     const pick = (event: PointerEvent) => {
-      if (disabledRef.current) return;
+      const tap = isBoardTap(pointerStart, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      pointerStart = null;
+      if (disabledRef.current || !tap) return;
       const rect = renderer.domElement.getBoundingClientRect();
       pointer.set(
         ((event.clientX - rect.left) / rect.width) * 2 - 1,
@@ -462,12 +516,24 @@ export function Battlefield3DEnhanced({
         }
       }
     };
-    renderer.domElement.addEventListener("pointerdown", pick);
+    renderer.domElement.addEventListener("pointerdown", beginPick);
+    renderer.domElement.addEventListener("pointerup", pick);
+    renderer.domElement.addEventListener("pointermove", trackPick);
+    renderer.domElement.addEventListener("pointercancel", cancelPick);
 
     let frame = 0;
     const animate = (now: number) => {
       controls.update();
       root.traverse((object) => {
+        if (object.userData.capturedAt !== undefined) {
+          const age = Math.min(
+            1,
+            (now - object.userData.capturedAt) / CAPTURE_REACTION_MS,
+          );
+          object.scale.setScalar(0.8 * (1 - age));
+          object.rotation.z = (age * Math.PI) / 3;
+          if (age >= 1) object.visible = false;
+        }
         const motion = object.userData.motion as Motion | undefined;
         if (motion) {
           const raw = Math.min(
@@ -513,7 +579,7 @@ export function Battlefield3DEnhanced({
             mat.opacity = Math.max(0.18, 0.9 * (1 - age * 0.72));
           } else object.visible = false;
         }
-        if (object.userData.flag)
+        if (object.userData.flag && !reducedMotionRef.current)
           object.rotation.y =
             Math.sin(now / 430 + object.userData.phase) * 0.12;
       });
@@ -524,7 +590,11 @@ export function Battlefield3DEnhanced({
 
     return () => {
       cancelAnimationFrame(frame);
-      renderer.domElement.removeEventListener("pointerdown", pick);
+      renderer.domElement.removeEventListener("pointerdown", beginPick);
+      renderer.domElement.removeEventListener("pointerup", pick);
+      renderer.domElement.removeEventListener("pointermove", trackPick);
+      renderer.domElement.removeEventListener("pointercancel", cancelPick);
+      motionQuery.removeEventListener("change", syncMotion);
       observer.disconnect();
       controls.dispose();
       dispose(root);
@@ -606,6 +676,10 @@ export function Battlefield3DEnhanced({
     addBanner(root, -4.65, -4.65, false);
     addBanner(root, 4.65, -4.65, false);
 
+    const checkedSquare = checkedGeneral(fen);
+    const paths = selected ? horsePaths(fen, selected) : [];
+    const transition = transitionCue(previousFenRef.current, fen, lastMove);
+    previousFenRef.current = fen;
     const hitMat = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0,
@@ -629,6 +703,10 @@ export function Battlefield3DEnhanced({
           markerColor = COLORS.last;
         if (destinations.includes(sq)) markerColor = COLORS.move;
         if (selected === sq) markerColor = COLORS.select;
+        if (paths.some((path) => path.leg === sq)) markerColor = COLORS.select;
+        if (paths.some((path) => path.leg === sq && path.blocked))
+          markerColor = COLORS.red;
+        if (checkedSquare === sq) markerColor = COLORS.red;
         if (markerColor) {
           const marker = mesh(
             new THREE.CylinderGeometry(
@@ -658,11 +736,58 @@ export function Battlefield3DEnhanced({
     const game = position(fen);
     const moveKey = lastMove ? `${fen}|${lastMove}` : null;
     const animateThisMove =
-      !!lastMove &&
-      /^[a-i][0-9][a-i][0-9]$/.test(lastMove) &&
+      !!transition &&
       animatedMoveRef.current !== moveKey &&
       !reducedMotionRef.current;
     if (moveKey) animatedMoveRef.current = moveKey;
+
+    if (animateThisMove && transition?.captured) {
+      const attacker = game.get(transition.to)!;
+      const victim = createUnit(
+        transition.captured,
+        attacker.color === "r" ? COLORS.black : COLORS.red,
+      );
+      const [x, z] = squareToWorld(transition.to, flipped);
+      victim.position.set(x, 0.12, z);
+      victim.rotation.y = attacker.color === "r" ? 0 : Math.PI;
+      victim.userData.capturedAt = performance.now();
+      // No pick square: the rules state already removed this visual-only victim.
+      root.add(victim);
+    }
+
+    if (checkedSquare) {
+      for (const attack of game.moves({ verbose: true, opponent: true })) {
+        if (
+          attack.to !== checkedSquare ||
+          !["r", "c"].includes(game.get(attack.from)?.type ?? "")
+        )
+          continue;
+        const points = [attack.from, attack.to].map((square) => {
+          const [x, z] = squareToWorld(square, flipped);
+          return new THREE.Vector3(x, 0.32, z);
+        });
+        root.add(
+          new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(points),
+            new THREE.LineBasicMaterial({ color: COLORS.red }),
+          ),
+        );
+      }
+    }
+
+    for (const path of paths)
+      if (path.legal) {
+        const points = [path.from, path.leg, path.to].map((square) => {
+          const [x, z] = squareToWorld(square, flipped);
+          return new THREE.Vector3(x, 0.32, z);
+        });
+        root.add(
+          new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(points),
+            new THREE.LineBasicMaterial({ color: COLORS.move }),
+          ),
+        );
+      }
 
     game.board().forEach((row, rowIndex) => {
       row.forEach((piece, colIndex) => {
@@ -848,16 +973,43 @@ export function Battlefield3DEnhanced({
   }, [
     fen,
     selected,
-    destinations,
+    destinationKey,
     arrow,
     lastMove,
-    moveEffect,
+    effectKey,
     flipped,
-    tutorialSquares,
+    tutorialKey,
+    reducedMotion,
   ]);
+
+  if (webglFailed)
+    return (
+      <div>
+        <p role="status">
+          Không mở được sa bàn 3D. Bạn có thể chơi trên bàn 2D.
+        </p>
+        <Board2D
+          {...{
+            fen,
+            selected,
+            destinations,
+            arrow,
+            lastMove,
+            moveEffect,
+            onSquare,
+            disabled,
+            flipped,
+            tutorialSquares,
+          }}
+        />
+      </div>
+    );
 
   return (
     <div className="battlefield3d-shell battlefield3d-enhanced">
+      {selected && position(fen).get(selected)?.type === "n" && (
+        <p role="status">Đường xanh: Mã đi được. Dấu đỏ: chân Mã bị chặn.</p>
+      )}
       <div
         ref={mountRef}
         className="battlefield3d-canvas"
