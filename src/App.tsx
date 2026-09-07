@@ -63,6 +63,9 @@ export default function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<string[]>([]);
   const [candidate, setCandidate] = useState<string | null>(null);
+  const [predictedRecapture, setPredictedRecapture] = useState<boolean | null>(
+    null,
+  );
   const [played, setPlayed] = useState<string | null>(null);
   const [solutionShown, setSolutionShown] = useState(false);
   const [moveObservation, setMoveObservation] = useState("");
@@ -227,6 +230,7 @@ export default function App() {
     invalidate();
     setSelected(null);
     setCandidate(null);
+    setPredictedRecapture(null);
     setCandidates([]);
     setPlayed(null);
     setSolutionShown(false);
@@ -273,6 +277,7 @@ export default function App() {
     if (mode === "training") {
       setCandidates([uci]);
       setCandidate(uci);
+      setPredictedRecapture(null);
       setSelected(null);
       return;
     }
@@ -353,13 +358,23 @@ export default function App() {
   }
 
   function submit() {
-    if (!candidate || played || preview || solutionShown || busy) return;
+    if (
+      !candidate ||
+      played ||
+      preview ||
+      solutionShown ||
+      busy ||
+      (mode === "training" && predictedRecapture === null)
+    )
+      return;
     const move = candidate;
     const root = inputFen;
     setAnalysisOpen(false);
     setPreview(null);
     if (mode === "training") {
-      const result = assessAttempt(exercise.fen, move);
+      const prediction = predictedRecapture;
+      if (prediction === null) return;
+      const result = assessAttempt(exercise.fen, move, prediction);
       setPlayed(move);
       setFeedback(result);
       setAttempts((old) => {
@@ -399,6 +414,7 @@ export default function App() {
             exerciseId: exercise.id,
             move,
             success: result.success,
+            predictedRecapture: prediction,
             ...exposure,
             ordinal,
             at: Date.now(),
@@ -778,7 +794,10 @@ export default function App() {
                         key={move}
                       >
                         <button
-                          onClick={() => setCandidate(move)}
+                          onClick={() => {
+                            setCandidate(move);
+                            setPredictedRecapture(null);
+                          }}
                           aria-pressed={move === candidate}
                         >
                           <span className="candidate-number">{i + 1}</span>
@@ -790,7 +809,10 @@ export default function App() {
                             setCandidates((old) =>
                               old.filter((m) => m !== move),
                             );
-                            if (candidate === move) setCandidate(null);
+                            if (candidate === move) {
+                              setCandidate(null);
+                              setPredictedRecapture(null);
+                            }
                           }}
                         >
                           <X size={14} />
@@ -808,12 +830,46 @@ export default function App() {
                     </p>
                   </div>
                 )}
+                {mode === "training" && candidate && (
+                  <fieldset className="reply-prediction">
+                    <legend>
+                      Trước khi chốt: Đen có ăn lại quân bạn vừa đi ngay không?
+                    </legend>
+                    <div>
+                      <button
+                        type="button"
+                        aria-pressed={predictedRecapture === true}
+                        className={predictedRecapture === true ? "chosen" : ""}
+                        onClick={() => setPredictedRecapture(true)}
+                      >
+                        Có, Đen ăn lại được
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={predictedRecapture === false}
+                        className={predictedRecapture === false ? "chosen" : ""}
+                        onClick={() => setPredictedRecapture(false)}
+                      >
+                        Không, chưa ăn lại được
+                      </button>
+                    </div>
+                    <small>Đoán trước rồi mới xem kết quả.</small>
+                  </fieldset>
+                )}
                 <button
                   className="primary-button"
                   onClick={submit}
-                  disabled={!candidate || busy}
+                  disabled={
+                    !candidate ||
+                    busy ||
+                    (mode === "training" && predictedRecapture === null)
+                  }
                 >
-                  {mode === "training" ? "Đi nước này" : "Đi nước này"}
+                  {mode === "training"
+                    ? predictedRecapture === null
+                      ? "Đoán nước đáp trước"
+                      : "Chốt nước và xem Đen đáp"
+                    : "Đi nước này"}
                   <ArrowRight size={18} />
                 </button>
               </section>
@@ -833,6 +889,16 @@ export default function App() {
                   <h3>{feedback.message}</h3>
                 </div>
                 <p>{feedback.detail}</p>
+                {feedback.prediction && (
+                  <p className="prediction-result">
+                    <strong>
+                      {feedback.prediction.correct
+                        ? "Bạn đoán đúng."
+                        : "Lần này đoán chưa đúng."}
+                    </strong>{" "}
+                    {feedback.prediction.detail}
+                  </p>
+                )}
                 <button className="text-button" onClick={() => resetTurn()}>
                   <RotateCcw size={15} />
                   Thử một nước khác

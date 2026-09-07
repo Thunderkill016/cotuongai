@@ -1,4 +1,4 @@
-import { inspectMove, position } from "./chess";
+import { describeMove, inspectMove, position } from "./chess";
 import {
   PLAYABLE_KNOWLEDGE_POSITIONS,
   type FoundationalSkill,
@@ -72,29 +72,58 @@ export const EXERCISES: Exercise[] = PLAYABLE_KNOWLEDGE_POSITIONS.map(
   }),
 );
 
+export interface AttemptAssessment {
+  success: boolean;
+  message: string;
+  detail: string;
+  prediction: { correct: boolean; detail: string } | null;
+}
+
 export function assessAttempt(
   fen: string,
   move: string,
-): { success: boolean; message: string; detail: string } {
+  predictedRecapture?: boolean,
+): AttemptAssessment {
   const { moved, recaptures } = inspectMove(fen, move);
+  const actualRecapture = recaptures.length > 0;
+  const prediction =
+    typeof predictedRecapture === "boolean"
+      ? {
+          correct: predictedRecapture === actualRecapture,
+          detail: actualRecapture
+            ? predictedRecapture
+              ? "Bạn đã nhìn ra Đen có thể ăn lại ngay."
+              : "Đen có thể ăn lại ngay; lần sau dừng một nhịp để tìm nước đáp này."
+            : predictedRecapture
+              ? "Đen không có nước ăn lại ngay trong thế này."
+              : "Bạn đã nhìn đúng: Đen không có nước ăn lại ngay.",
+        }
+      : null;
   if (!moved.captured)
     return {
       success: false,
       message: "Nước này đi được, nhưng chưa ăn quân.",
-      detail:
-        "Bài này chỉ cần: ăn một quân, rồi nhìn xem đối thủ có ăn lại quân vừa đi được không.",
+      detail: `${describeMove(fen, move)} chưa ăn quân. Bài này cần tìm một nước ăn quân, rồi nhìn nước đáp của Đen.`,
+      prediction,
     };
-  if (recaptures.length)
+  if (recaptures.length) {
+    const after = position(fen);
+    after.move(move);
     return {
       success: false,
       message: "Đối thủ ăn lại được ngay.",
-      detail: `Nhìn nước đáp ${recaptures[0].from} → ${recaptures[0].to}. Ăn được quân chưa chắc đã lời nếu quân vừa đi bị ăn lại ngay.`,
+      detail: `${describeMove(fen, move)} nhìn có lợi, nhưng Đen đáp ${describeMove(
+        after.fen(),
+        `${recaptures[0].from}${recaptures[0].to}`,
+      )}. Ăn được quân chưa chắc đã lời nếu quân vừa đi bị ăn lại ngay.`,
+      prediction,
     };
+  }
   return {
     success: true,
     message: "Đúng rồi — nước này ăn quân mà không bị ăn lại ngay.",
-    detail:
-      "Trong thế này, quân vừa đi không bị ăn lại ngay. Điều đó chưa có nghĩa đây là nước hay nhất của cả ván.",
+    detail: `${describeMove(fen, move)} ăn quân mà Đen không ăn lại ngay. Điều đó chưa có nghĩa đây là nước hay nhất của cả ván.`,
+    prediction,
   };
 }
 
@@ -105,6 +134,7 @@ export interface Attempt {
   success: boolean;
   hints: number;
   revealed: boolean;
+  predictedRecapture?: boolean;
   ordinal: number;
   at: number;
 }
@@ -182,6 +212,8 @@ export function parseAttempts(raw: string | null): Attempt[] {
           typeof v.move !== "string" ||
           typeof v.success !== "boolean" ||
           typeof v.revealed !== "boolean" ||
+          (v.predictedRecapture !== undefined &&
+            typeof v.predictedRecapture !== "boolean") ||
           !Number.isInteger(v.hints) ||
           v.hints < 0 ||
           v.hints > 3 ||

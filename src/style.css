@@ -546,6 +546,57 @@ h2 {
   color: #405039;
   font-size: 0.88rem;
 }
+
+.reply-prediction {
+  margin: 14px 0;
+  padding: 12px;
+  border: 1px solid #d7dfd1;
+  border-radius: 8px;
+  color: #405039;
+}
+
+.reply-prediction legend {
+  padding: 0 4px;
+  font-size: 0.87rem;
+  font-weight: 600;
+}
+
+.reply-prediction div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reply-prediction button {
+  min-height: 42px;
+  border: 1px solid #cbd7c3;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fffefa;
+  color: #52634d;
+  font-size: 0.82rem;
+}
+
+.reply-prediction button.chosen {
+  border-color: #54755f;
+  background: #e6efe1;
+  color: #254e42;
+  font-weight: 600;
+}
+
+.reply-prediction small {
+  display: block;
+  margin-top: 7px;
+  color: #75816f;
+  font-size: 0.76rem;
+}
+
+.prediction-result {
+  margin-top: 10px !important;
+  border-top: 1px solid currentColor;
+  padding-top: 10px;
+}
 .lesson-track {
   display: flex;
   gap: 7px;

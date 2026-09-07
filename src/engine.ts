@@ -117,6 +117,7 @@ type Pending = {
   history: string[];
   rootFen: string;
   count: number;
+  requireCoherentLine: boolean;
   searchmove?: string;
   lines: EngineLine[];
   resolve: (a: Analysis) => void;
@@ -191,6 +192,7 @@ export class EngineClient {
     fen: string,
     history: string[] = [],
     searchmove?: string,
+    requireCoherentLine = true,
   ): Promise<Analysis> {
     this.cancel();
     const id = ++this.sequence;
@@ -217,7 +219,13 @@ export class EngineClient {
     await this.init();
     if (id !== this.sequence)
       throw new DOMException("Đã đổi thế cờ.", "AbortError");
-    const count = searchmove ? 1 : Math.min(3, legal.length);
+    // Playing one legal reply must not depend on receiving a complete MultiPV
+    // bundle. The stricter path stays mandatory for coaching and review.
+    const count = requireCoherentLine
+      ? searchmove
+        ? 1
+        : Math.min(3, legal.length)
+      : 1;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(
         () =>
@@ -232,6 +240,7 @@ export class EngineClient {
         history: [...history],
         rootFen,
         count,
+        requireCoherentLine,
         searchmove,
         lines: [],
         resolve,
@@ -250,6 +259,10 @@ export class EngineClient {
     });
   }
 
+  playMove(fen: string, history: string[] = []): Promise<Analysis> {
+    return this.analyze(fen, history, undefined, false);
+  }
+
   private onLine(id: number, raw: string, cancelled: boolean) {
     const job = this.pending;
     if (!job || job.id !== id || cancelled) return;
@@ -263,8 +276,8 @@ export class EngineClient {
     if (
       !position(job.rootFen).moves().includes(bestmove) ||
       (job.searchmove && bestmove !== job.searchmove) ||
-      !lines.length ||
-      lines[0].pv[0] !== bestmove
+      (job.requireCoherentLine &&
+        (!lines.length || lines[0].pv[0] !== bestmove))
     ) {
       job.reject(
         new Error(

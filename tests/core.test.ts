@@ -91,6 +91,17 @@ describe("bounded teaching fixtures", () => {
   it("a legal quiet move does not pass the capture exercise", () => {
     expect(assessAttempt(EXERCISES[0].fen, "b0c0").success).toBe(false);
   });
+  it("reports whether the learner predicted an immediate recapture", () => {
+    const safe = assessAttempt(EXERCISES[0].fen, "b0b3", false);
+    expect(safe.prediction).toMatchObject({ correct: true });
+    const unsafe = assessAttempt(
+      "4k4/9/9/9/4p4/2r6/2n6/9/9/2R1K4 r - - 0 1",
+      "c0c3",
+      false,
+    );
+    expect(unsafe.prediction).toMatchObject({ correct: false });
+    expect(unsafe.detail).toContain("Đen đáp Xe");
+  });
   it("a legal recapture refutes the immediate-safety objective", () => {
     const fen = "4k4/9/9/9/4p4/2r6/2n6/9/9/2R1K4 r - - 0 1";
     expect(assessAttempt(fen, "c0c3").success).toBe(false);
@@ -102,6 +113,7 @@ describe("bounded teaching fixtures", () => {
     success: true,
     hints: 0,
     revealed: false,
+    predictedRecapture: false,
     ordinal: 1,
     at: 1000,
   };
@@ -122,6 +134,7 @@ describe("bounded teaching fixtures", () => {
         JSON.stringify([
           { ...record, move: "a0a9" },
           { ...record, hints: -1 },
+          { ...record, predictedRecapture: "không" as unknown as boolean },
           { ...record, move: "b0c0", success: true },
         ]),
       ),

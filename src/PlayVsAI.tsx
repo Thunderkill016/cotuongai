@@ -208,7 +208,7 @@ export function PlayVsAI({ onExit }: PlayVsAIProps) {
     setMessage("");
 
     client
-      .analyze(START_FEN, history)
+      .playMove(START_FEN, history)
       .then((analysis) => {
         if (ticket !== epoch.current) return;
         if (!analysis.bestmove) {
